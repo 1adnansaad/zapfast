@@ -115,7 +115,7 @@ fn header(app: &mut App, ui: &mut egui::Ui) {
             bottom: 8,
         })
         .show(ui, |ui| {
-            ui.allocate_ui_with_layout(
+            let row = ui.allocate_ui_with_layout(
                 vec2(ui.available_width(), super::conversation::HEADER_ROW),
                 Layout::left_to_right(Align::Center),
                 |ui| {
@@ -237,6 +237,8 @@ fn header(app: &mut App, ui: &mut egui::Ui) {
                     });
                 },
             );
+            ui.ctx()
+                .data_mut(|data| data.insert_temp(header_row_id(), row.response.rect));
             ui.add_space(6.0);
             let id = egui::Id::new("chat-search");
             let width = ui.available_width();
@@ -259,6 +261,11 @@ fn header(app: &mut App, ui: &mut egui::Ui) {
             }
             filter_chips(app, ui);
         });
+}
+
+/// Where the chat list header's first row was laid out, for layout tests.
+pub(crate) fn header_row_id() -> egui::Id {
+    egui::Id::new("chat-list-header-row")
 }
 
 fn macos_header(app: &mut App, ui: &mut egui::Ui) {

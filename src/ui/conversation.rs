@@ -115,7 +115,7 @@ fn header(app: &mut App, ui: &mut egui::Ui, chat: &Chat) -> Rect {
             if theme::macos_chrome(ui.ctx()) {
                 super::titlebar_drag(ui, ui.max_rect());
             }
-            ui.horizontal(|ui| {
+            let row = ui.horizontal(|ui| {
                 // Give both rows a fixed height so their contents align.
                 ui.set_min_height(HEADER_ROW);
                 let picture = app.avatar(&chat.id);
@@ -334,9 +334,16 @@ fn header(app: &mut App, ui: &mut egui::Ui, chat: &Chat) -> Rect {
                     }
                 });
             });
+            ui.ctx()
+                .data_mut(|data| data.insert_temp(header_row_id(), row.response.rect));
         })
         .response
         .rect
+}
+
+/// Where the conversation header's row was laid out, for layout tests.
+pub(crate) fn header_row_id() -> egui::Id {
+    egui::Id::new("conversation-header-row")
 }
 
 /// Chat-header subtitle.
@@ -563,7 +570,7 @@ fn emoji_suggestions(app: &mut App, ui: &mut egui::Ui, field: egui::Id) {
     let mut picked = submit.then(|| candidates[app.emoji_selected].clone());
     let palette = app.palette;
 
-    widgets::raised(ui, &palette, suggestion_frame(&palette), |ui| {
+    let list = widgets::raised(ui, &palette, suggestion_frame(&palette), |ui| {
         let row_height = 36.0;
         ui.spacing_mut().item_spacing.y = 0.0;
         for (index, candidate) in candidates.iter().enumerate() {
@@ -636,6 +643,8 @@ fn emoji_suggestions(app: &mut App, ui: &mut egui::Ui, field: egui::Id) {
             }
         }
     });
+    ui.ctx()
+        .data_mut(|data| data.insert_temp(suggestion_list_id(), list.response.rect));
     strip_gap(ui);
     if let Some(candidate) = picked {
         app.actions.push(Action::InsertEmojiCompletion {
@@ -674,7 +683,7 @@ fn mention_picker(app: &mut App, ui: &mut egui::Ui, chat: &Chat, field: egui::Id
     let mut picked = submit.then(|| candidates[app.mention_selected].clone());
     let palette = app.palette;
 
-    widgets::raised(ui, &palette, suggestion_frame(&palette), |ui| {
+    let list = widgets::raised(ui, &palette, suggestion_frame(&palette), |ui| {
         let row_height = 38.0;
         egui::ScrollArea::vertical()
             .id_salt("mention-members")
@@ -755,6 +764,8 @@ fn mention_picker(app: &mut App, ui: &mut egui::Ui, chat: &Chat, field: egui::Id
                 }
             });
     });
+    ui.ctx()
+        .data_mut(|data| data.insert_temp(suggestion_list_id(), list.response.rect));
     strip_gap(ui);
     if let Some((id, name)) = picked {
         app.actions.push(Action::InsertMention {
@@ -1594,6 +1605,11 @@ fn reply_strip(app: &mut App, ui: &mut egui::Ui, quoted: &Message) {
     ui.ctx()
         .data_mut(|data| data.insert_temp(reply_strip_id(), strip.response.rect));
     strip_gap(ui);
+}
+
+/// Where the emoji or @mention suggestion list was drawn, for layout tests.
+pub(crate) fn suggestion_list_id() -> egui::Id {
+    egui::Id::new("suggestion-list")
 }
 
 /// Where the reply strip was drawn, for layout tests.

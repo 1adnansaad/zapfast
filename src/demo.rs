@@ -9374,6 +9374,67 @@ mod tests {
         );
     }
 
+    /// The emoji and @mention suggestion lists sit on the composer as the
+    /// strips do: as wide as it, and a strip's gap above it.
+    #[test]
+    fn suggestion_lists_sit_close_above_the_composer() {
+        for page in ["emoji-complete", "mention"] {
+            let mut app = app();
+            let ctx = egui::Context::default();
+            app.attach(&ctx);
+            apply_flags(&mut app, Some(page));
+            for _ in 0..4 {
+                frame_sized(&mut app, &ctx, 780.0, Vec::new());
+            }
+            let (list, pill) = ctx.data(|data| {
+                (
+                    data.get_temp::<egui::Rect>(crate::ui::conversation::suggestion_list_id()),
+                    data.get_temp::<egui::Rect>(crate::ui::conversation::composer_pill_id()),
+                )
+            });
+            let (list, pill) = (
+                list.expect("the list is drawn"),
+                pill.expect("the composer"),
+            );
+            let gap = pill.top() - list.bottom();
+            assert!(
+                (gap - crate::ui::conversation::STRIP_GAP).abs() < 0.5,
+                "{page}: the list ends {gap} above the composer"
+            );
+            assert!(
+                (list.left() - pill.left()).abs() < 0.5
+                    && (list.right() - pill.right()).abs() < 0.5,
+                "{page}: the list {list:?} spans the composer {pill:?}"
+            );
+        }
+    }
+
+    /// The chat list's header and the conversation's start their first row
+    /// at the same height and make it as tall, so the titles line up.
+    #[test]
+    fn both_headers_share_their_first_row() {
+        let mut app = app();
+        let ctx = egui::Context::default();
+        app.attach(&ctx);
+        for _ in 0..3 {
+            frame_sized(&mut app, &ctx, 780.0, Vec::new());
+        }
+        let (list, chat) = ctx.data(|data| {
+            (
+                data.get_temp::<egui::Rect>(crate::ui::chats::header_row_id()),
+                data.get_temp::<egui::Rect>(crate::ui::conversation::header_row_id()),
+            )
+        });
+        let (list, chat) = (
+            list.expect("the chat list"),
+            chat.expect("the conversation"),
+        );
+        assert!(
+            (list.top() - chat.top()).abs() < 0.5 && (list.height() - chat.height()).abs() < 0.5,
+            "chat list row {list:?}, conversation row {chat:?}"
+        );
+    }
+
     /// The text starts right after the plus and emoji pair, as close to the
     /// emoji as the emoji is to the plus, not a field's width away.
     #[test]
