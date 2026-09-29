@@ -4163,6 +4163,12 @@ impl App {
                     self.picker = Some(tab);
                     self.picker_search.clear();
                     self.picker_focus = tab == PickerTab::Emoji;
+                    if tab == PickerTab::Emoji {
+                        crate::emoji::prewarm(
+                            ctx,
+                            crate::ui::picker::first_page(&self.settings.recent_emoji),
+                        );
+                    }
                     self.emoji_selected = 0;
                     self.emoji_jump = None;
                     if tab == PickerTab::Stickers {
@@ -4213,6 +4219,13 @@ impl App {
                     ctx.data(|data| data.get_temp::<egui::Rect>(id.with(anchor)));
                 self.reaction_beside_menu = beside_menu;
                 self.reaction_target = Some((chat, message));
+                let frequent: Vec<String> = self
+                    .settings
+                    .reaction_emoji
+                    .iter()
+                    .map(|(emoji, _)| emoji.clone())
+                    .collect();
+                crate::emoji::prewarm(ctx, crate::ui::picker::first_page(&frequent));
                 self.picker_search.clear();
                 self.picker_focus = true;
                 self.emoji_selected = 0;

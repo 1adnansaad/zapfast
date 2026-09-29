@@ -40,6 +40,13 @@ pub fn warm_up() {
     fastframe_emoji::warm_up();
 }
 
+/// Queues pictures to be drawn off the interface thread before a frame shows
+/// them: the first page of a picker as it opens.
+pub fn prewarm<'a>(ctx: &egui::Context, clusters: impl IntoIterator<Item = &'a str>) {
+    setup();
+    fastframe_emoji::prewarm(ctx, clusters);
+}
+
 /// Appends text with placeholders and records their emoji sequences.
 pub fn append(
     ui: &egui::Ui,
