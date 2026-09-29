@@ -1326,6 +1326,9 @@ impl App {
         ctx.add_plugin(crate::ui::conversation::SelectionLeash::new(
             std::sync::Arc::clone(&self.selection_view),
         ));
+        // Colour emoji in labels, menus, tooltips and text fields; message
+        // bodies paint their own over placeholders, which it leaves alone.
+        ctx.add_plugin(crate::emoji::plugin());
         crate::theme::install(ctx);
         // Use a faster wheel speed for short chat rows.
         ctx.options_mut(|options| options.input_options.line_scroll_speed = 120.0);
@@ -10268,6 +10271,67 @@ mod tests {
         app.attach(&ctx);
 
         assert!(app.focus_composer);
+    }
+
+    /// Plain egui text (a label, a tooltip) gets its emoji in colour from
+    /// the plugin, while a line laid out with placeholders gets exactly one
+    /// picture, its own, and no second one from the plugin.
+    #[test]
+    fn plain_text_emoji_are_coloured_without_painting_placeholders_twice() {
+        use egui::epaint::{Shape, TextureId};
+        fn pictures(shape: &Shape) -> usize {
+            match shape {
+                Shape::Vec(shapes) => shapes.iter().map(pictures).sum(),
+                Shape::Mesh(mesh) if mesh.texture_id != TextureId::default() => 1,
+                _ => 0,
+            }
+        }
+        assert!(
+            crate::emoji::available(),
+            "the bundled font is always there"
+        );
+        let mut app = app();
+        let ctx = egui::Context::default();
+        app.attach(&ctx);
+        let count = |draw: &dyn Fn(&mut egui::Ui)| {
+            let mut total = 0;
+            // A new area is measured in its first frame and drawn after.
+            for _ in 0..2 {
+                let mut output = ctx.run_ui(egui::RawInput::default(), |ui| draw(ui));
+                output.textures_delta.clear();
+                total = output
+                    .shapes
+                    .iter()
+                    .map(|clipped| pictures(&clipped.shape))
+                    .sum::<usize>();
+            }
+            total
+        };
+        assert_eq!(count(&|ui| drop(ui.label("plain 😀"))), 1, "a label");
+        assert_eq!(
+            count(&|ui| {
+                egui::Area::new(egui::Id::new("tip"))
+                    .order(egui::Order::Tooltip)
+                    .show(ui.ctx(), |ui| ui.label("tip 👍🏽"));
+            }),
+            1,
+            "a tooltip"
+        );
+        assert_eq!(
+            count(&|ui| {
+                let line = crate::ui::widgets::line(
+                    ui,
+                    "placeholder 😀",
+                    egui::FontId::proportional(14.0),
+                    egui::Color32::WHITE,
+                    300.0,
+                    1,
+                );
+                line.paint(ui, egui::pos2(0.0, 0.0), egui::Color32::WHITE);
+            }),
+            1,
+            "a placeholder line"
+        );
     }
 
     #[test]

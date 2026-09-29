@@ -40,6 +40,15 @@ pub fn warm_up() {
     fastframe_emoji::warm_up();
 }
 
+/// The egui plugin that colours the emoji in every other text: labels,
+/// buttons, menus, tooltips and text fields. It leaves the placeholders
+/// `append` lays out and the glyphs `editor_job` hides to the paint calls
+/// below, so message bodies keep their selectable, copyable placeholders.
+pub fn plugin() -> fastframe_emoji::EmojiPlugin {
+    setup();
+    fastframe_emoji::EmojiPlugin::default()
+}
+
 /// Queues pictures to be drawn off the interface thread before a frame shows
 /// them: the first page of a picker as it opens.
 pub fn prewarm<'a>(ctx: &egui::Context, clusters: impl IntoIterator<Item = &'a str>) {

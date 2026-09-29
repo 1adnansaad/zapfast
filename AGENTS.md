@@ -124,8 +124,13 @@ protocol. These notes are for coding agents and new contributors.
   Noto behind them). New pictures are drawn on its worker thread; tests and
   demo builds draw them inside the frame. The interface font is the
   platform's own (`fastframe_fonts::Primary::System`), and Inter in tests.
-  Any text that can hold an emoji goes through `widgets::line` /
-  `widgets::rich_text` or `markup::layout`, never a bare `Label`.
+  fastframe-emoji's `EmojiPlugin` (added in `App::attach`) colours the
+  emoji in every other egui text: labels, menus, tooltips, text fields. It
+  leaves placeholders and `editor_job` glyphs alone, so the two never paint
+  one emoji twice. Message text and chat names still go through
+  `widgets::line` / `widgets::rich_text` or `markup::layout`: their
+  placeholders keep the emoji-only sizing and let `transcript::refine`
+  put copied emoji back.
 - `src/animation.rs` plays animated stickers and GIFs: WebP/GIF frames
   decode in-process, and so do MP4s (the `mp4` crate demuxes, `openh264`
   decodes the H.264 WhatsApp uses, samples converted from AVCC to Annex
