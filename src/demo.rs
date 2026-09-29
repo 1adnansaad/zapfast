@@ -10857,3 +10857,63 @@ mod picture_edge_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod bubble_detail_tests {
+    use super::tests::app;
+    use super::*;
+
+    /// Runs frames at `size` and returns the last frame's shapes.
+    fn frames(
+        app: &mut App,
+        ctx: &egui::Context,
+        size: egui::Vec2,
+    ) -> Vec<egui::epaint::ClippedShape> {
+        let mut shapes = Vec::new();
+        for _ in 0..3 {
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(egui::Pos2::ZERO, size)),
+                    ..Default::default()
+                },
+                |ui| {
+                    let ctx = ui.ctx().clone();
+                    app.background_frame(&ctx);
+                    app.frame_ui(ui);
+                },
+            );
+            output.textures_delta.clear();
+            shapes = output.shapes;
+        }
+        shapes
+    }
+
+    /// In a wide window the settings keep their width and sit in the
+    /// middle of the page instead of against its left edge (#242).
+    #[test]
+    fn the_settings_column_is_centred_in_a_wide_window() {
+        let mut app = app();
+        let ctx = egui::Context::default();
+        app.attach(&ctx);
+        apply_flags(&mut app, Some("settings"));
+        let column = |ctx: &egui::Context| {
+            ctx.data(|data| data.get_temp::<egui::Rangef>(crate::ui::settings::column_id()))
+                .expect("the settings were drawn")
+        };
+        let mut columns = Vec::new();
+        for width in [1400.0, 1800.0] {
+            frames(&mut app, &ctx, egui::vec2(width, 900.0));
+            let drawn = column(&ctx);
+            assert!((drawn.span() - 640.0).abs() < 0.5, "{drawn:?}");
+            columns.push(drawn);
+        }
+        let moved = columns[1].center() - columns[0].center();
+        assert!(
+            (moved - 200.0).abs() < 1.0,
+            "the column follows the middle of the page: moved {moved}"
+        );
+        // A narrow page keeps the usual margins instead.
+        frames(&mut app, &ctx, egui::vec2(900.0, 900.0));
+        assert!(column(&ctx).span() < 640.0, "{:?}", column(&ctx));
+    }
+}
