@@ -4431,11 +4431,33 @@ fn content(
             );
             None
         }
-        Content::PhoneOnly { view_once, .. } => {
-            let text = if *view_once {
-                "View once message. For your privacy, it opens only on your phone."
-            } else {
-                "This message can only be seen on your phone."
+        Content::PhoneOnly {
+            view_once, once, ..
+        } => {
+            use crate::i18n::gettext;
+            use crate::model::OnceMedia;
+            let text = match once {
+                Some(OnceMedia::Photo) => gettext(
+                    view.locale,
+                    "View once photo. For your privacy, it opens only on your phone.",
+                ),
+                Some(OnceMedia::Video) => gettext(
+                    view.locale,
+                    "View once video. For your privacy, it opens only on your phone.",
+                ),
+                Some(OnceMedia::Voice) => gettext(
+                    view.locale,
+                    "View once voice message. For your privacy, it opens only on your phone.",
+                ),
+                Some(OnceMedia::Audio) => gettext(
+                    view.locale,
+                    "View once audio. For your privacy, it opens only on your phone.",
+                ),
+                None if *view_once => gettext(
+                    view.locale,
+                    "View once message. For your privacy, it opens only on your phone.",
+                ),
+                None => gettext(view.locale, "This message can only be seen on your phone."),
             };
             mirrored_row(
                 ui,

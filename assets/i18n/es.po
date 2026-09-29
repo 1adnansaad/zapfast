@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: ZapFast\n"
 "Report-Msgid-Bugs-To: https://github.com/crmne/zapfast/issues/new?"
 "template=translation.yml\n"
-"POT-Creation-Date: 2026-09-29 12:30+0200\n"
+"POT-Creation-Date: 2026-09-29 12:26+0200\n"
 "PO-Revision-Date: 2026-09-22 00:00-0300\n"
 "Last-Translator: ZapFast contributors\n"
 "Language-Team: Spanish\n"
@@ -340,23 +340,54 @@ msgstr "Ver stickers"
 msgid "Open WhatsApp on your phone to follow it."
 msgstr "Abre WhatsApp en tu teléfono para seguirla."
 
-#: src/ui/conversation.rs:5270
+#: src/ui/conversation.rs:4442
+msgid "View once photo. For your privacy, it opens only on your phone."
+msgstr ""
+"Foto de visualización única. Por tu privacidad, solo se abre en tu teléfono."
+
+#: src/ui/conversation.rs:4446
+msgid "View once video. For your privacy, it opens only on your phone."
+msgstr ""
+"Video de visualización única. Por tu privacidad, solo se abre en tu teléfono."
+
+#: src/ui/conversation.rs:4450
+msgid "View once voice message. For your privacy, it opens only on your phone."
+msgstr ""
+"Mensaje de voz de reproducción única. Por tu privacidad, solo se abre en tu "
+"teléfono."
+
+#: src/ui/conversation.rs:4454
+msgid "View once audio. For your privacy, it opens only on your phone."
+msgstr ""
+"Audio de reproducción única. Por tu privacidad, solo se abre en tu teléfono."
+
+#: src/ui/conversation.rs:4458
+msgid "View once message. For your privacy, it opens only on your phone."
+msgstr ""
+"Mensaje de visualización única. Por tu privacidad, solo se abre en tu "
+"teléfono."
+
+#: src/ui/conversation.rs:4460
+msgid "This message can only be seen on your phone."
+msgstr "Este mensaje solo se puede ver en tu teléfono."
+
+#: src/ui/conversation.rs:5292
 msgid "Open in a map"
 msgstr "Abrir en un mapa"
 
-#: src/ui/conversation.rs:5829
+#: src/ui/conversation.rs:5851
 msgid "Pause"
 msgstr "Pausa"
 
-#: src/ui/conversation.rs:5831 src/ui/settings.rs:1420
+#: src/ui/conversation.rs:5853 src/ui/settings.rs:1420
 msgid "Play"
 msgstr "Reproducir"
 
-#: src/ui/conversation.rs:5854
+#: src/ui/conversation.rs:5876
 msgid "Unmute"
 msgstr "Activar sonido"
 
-#: src/ui/conversation.rs:5856
+#: src/ui/conversation.rs:5878
 msgid "Mute"
 msgstr "Silenciar"
 

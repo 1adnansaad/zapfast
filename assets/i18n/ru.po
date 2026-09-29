@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: ZapFast\n"
 "Report-Msgid-Bugs-To: https://github.com/crmne/zapfast/issues/new?"
 "template=translation.yml\n"
-"POT-Creation-Date: 2026-09-29 12:30+0200\n"
+"POT-Creation-Date: 2026-09-29 12:26+0200\n"
 "PO-Revision-Date: 2026-09-22 00:00-0300\n"
 "Last-Translator: ZapFast contributors\n"
 "Language-Team: Russian\n"
@@ -344,23 +344,57 @@ msgstr "Посмотреть стикеры"
 msgid "Open WhatsApp on your phone to follow it."
 msgstr "Откройте WhatsApp на телефоне, чтобы следить за ними."
 
-#: src/ui/conversation.rs:5270
+#: src/ui/conversation.rs:4442
+msgid "View once photo. For your privacy, it opens only on your phone."
+msgstr ""
+"Одноразовое фото. В целях конфиденциальности оно открывается только на "
+"телефоне."
+
+#: src/ui/conversation.rs:4446
+msgid "View once video. For your privacy, it opens only on your phone."
+msgstr ""
+"Одноразовое видео. В целях конфиденциальности оно открывается только на "
+"телефоне."
+
+#: src/ui/conversation.rs:4450
+msgid "View once voice message. For your privacy, it opens only on your phone."
+msgstr ""
+"Одноразовое голосовое сообщение. В целях конфиденциальности оно открывается "
+"только на телефоне."
+
+#: src/ui/conversation.rs:4454
+msgid "View once audio. For your privacy, it opens only on your phone."
+msgstr ""
+"Одноразовое аудио. В целях конфиденциальности оно открывается только на "
+"телефоне."
+
+#: src/ui/conversation.rs:4458
+msgid "View once message. For your privacy, it opens only on your phone."
+msgstr ""
+"Одноразовое сообщение. В целях конфиденциальности оно открывается только на "
+"телефоне."
+
+#: src/ui/conversation.rs:4460
+msgid "This message can only be seen on your phone."
+msgstr "Это сообщение можно посмотреть только на телефоне."
+
+#: src/ui/conversation.rs:5292
 msgid "Open in a map"
 msgstr "Открыть на карте"
 
-#: src/ui/conversation.rs:5829
+#: src/ui/conversation.rs:5851
 msgid "Pause"
 msgstr "Пауза"
 
-#: src/ui/conversation.rs:5831 src/ui/settings.rs:1420
+#: src/ui/conversation.rs:5853 src/ui/settings.rs:1420
 msgid "Play"
 msgstr "Воспроизвести"
 
-#: src/ui/conversation.rs:5854
+#: src/ui/conversation.rs:5876
 msgid "Unmute"
 msgstr "Включить звук"
 
-#: src/ui/conversation.rs:5856
+#: src/ui/conversation.rs:5878
 msgid "Mute"
 msgstr "Выключить звук"
 

@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: ZapFast\n"
 "Report-Msgid-Bugs-To: https://github.com/crmne/zapfast/issues/new?"
 "template=translation.yml\n"
-"POT-Creation-Date: 2026-09-29 12:30+0200\n"
+"POT-Creation-Date: 2026-09-29 12:26+0200\n"
 "PO-Revision-Date: 2026-09-25 23:00-0300\n"
 "Last-Translator: ZapFast contributors\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -333,23 +333,47 @@ msgstr "查看贴图"
 msgid "Open WhatsApp on your phone to follow it."
 msgstr "在手机上打开 WhatsApp 即可查看。"
 
-#: src/ui/conversation.rs:5270
+#: src/ui/conversation.rs:4442
+msgid "View once photo. For your privacy, it opens only on your phone."
+msgstr "一次性照片。为保护你的隐私，它只能在手机上打开。"
+
+#: src/ui/conversation.rs:4446
+msgid "View once video. For your privacy, it opens only on your phone."
+msgstr "一次性视频。为保护你的隐私，它只能在手机上打开。"
+
+#: src/ui/conversation.rs:4450
+msgid "View once voice message. For your privacy, it opens only on your phone."
+msgstr "一次性语音消息。为保护你的隐私，它只能在手机上打开。"
+
+#: src/ui/conversation.rs:4454
+msgid "View once audio. For your privacy, it opens only on your phone."
+msgstr "一次性音频。为保护你的隐私，它只能在手机上打开。"
+
+#: src/ui/conversation.rs:4458
+msgid "View once message. For your privacy, it opens only on your phone."
+msgstr "一次性消息。为保护你的隐私，它只能在手机上打开。"
+
+#: src/ui/conversation.rs:4460
+msgid "This message can only be seen on your phone."
+msgstr "此消息只能在手机上查看。"
+
+#: src/ui/conversation.rs:5292
 msgid "Open in a map"
 msgstr "在地图中打开"
 
-#: src/ui/conversation.rs:5829
+#: src/ui/conversation.rs:5851
 msgid "Pause"
 msgstr "暂停"
 
-#: src/ui/conversation.rs:5831 src/ui/settings.rs:1420
+#: src/ui/conversation.rs:5853 src/ui/settings.rs:1420
 msgid "Play"
 msgstr "播放"
 
-#: src/ui/conversation.rs:5854
+#: src/ui/conversation.rs:5876
 msgid "Unmute"
 msgstr "取消静音"
 
-#: src/ui/conversation.rs:5856
+#: src/ui/conversation.rs:5878
 msgid "Mute"
 msgstr "静音"
 
