@@ -2004,7 +2004,7 @@ pub fn group_name_field_id() -> egui::Id {
 }
 
 /// A filled button for a destructive action.
-fn danger_button(ui: &mut egui::Ui, app: &mut App, label: &str) -> bool {
+pub(super) fn danger_button(ui: &mut egui::Ui, app: &mut App, label: &str) -> bool {
     let palette = app.palette;
     let galley = ui.painter().layout_no_wrap(
         label.to_owned(),

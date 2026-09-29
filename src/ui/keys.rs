@@ -26,6 +26,14 @@ pub fn handle(app: &mut App, ctx: &egui::Context) {
             Action::FocusSearch,
         );
         key(Modifiers::COMMAND, Key::F, find);
+        // Before Ctrl+L, which would also match it with Shift held.
+        if app.settings.app_lock_hash.is_some() {
+            key(
+                Modifiers::COMMAND | Modifiers::SHIFT,
+                Key::L,
+                Action::LockApp,
+            );
+        }
         key(Modifiers::COMMAND, Key::K, Action::FocusSearch);
         if app.is_linked() {
             key(
@@ -331,6 +339,7 @@ pub const SHORTCUTS: &[(&str, &str)] = &[
     ("Ctrl++ / Ctrl+-", "Zoom in / out"),
     ("Ctrl+0", "Reset zoom"),
     ("? / Ctrl+/", "Keyboard shortcuts (? when not typing)"),
+    ("Ctrl+Shift+L", "Lock ZapFast (with an app lock password)"),
     ("Ctrl+W", "Close the window (ZapFast remains in the tray)"),
     ("Ctrl+Q", "Quit"),
 ];
