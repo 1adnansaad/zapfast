@@ -2704,12 +2704,19 @@ impl egui::plugin::Plugin for SelectionLeash {
         "zapfast-selection-leash"
     }
 
-    fn input_hook(&mut self, _ctx: &egui::Context, input: &mut egui::RawInput) {
+    fn input_hook(&mut self, ctx: &egui::Context, input: &mut egui::RawInput) {
         let Some(view) = *self.view.lock().unwrap_or_else(|p| p.into_inner()) else {
             self.holding = false;
             return;
         };
-        let inside = |pos: &egui::Pos2| view.contains(*pos) && pos.x < view.right() - 16.0;
+        // The chat list's resize handle reaches into the view from its left
+        // edge, as the scroll bar does on the right. Leashing a drag of the
+        // handle pinned the pointer, and the list's edge, just inside the
+        // view: stuck at its widest, or growing while dragged left (#239).
+        let handle = ctx.global_style().interaction.resize_grab_radius_side;
+        let inside = |pos: &egui::Pos2| {
+            view.contains(*pos) && pos.x >= view.left() + handle && pos.x < view.right() - 16.0
+        };
         let mut gone = Vec::new();
         for (index, event) in input.events.iter_mut().enumerate() {
             match event {
