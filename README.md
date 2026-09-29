@@ -66,7 +66,7 @@ See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
   The filters stay on one row and scroll horizontally in narrow sidebars.
   Unnamed groups use a shared participant summary for their title and subtitle.
   It names each saved contact by its whole first name as saved on the phone (the
-  full name when none was saved), repeated names appear as `Andrea ×3`, and your
+  first word of the name when none is known), repeated names appear as `Andrea ×3`, and your
   own entry is shown as `You`.
   Incomplete group metadata preserves known names and retries with backoff;
   an empty cached subject remains eligible for recovery.
