@@ -369,6 +369,17 @@ pub fn bold(size: f32) -> egui::FontId {
     fastframe_fonts::Weight::Bold.font_id(size)
 }
 
+/// The face for counting timers (recording, playback positions): Inter at
+/// `weight`, whose figures are all one width, so a timer does not shift as
+/// it counts. San Francisco and Segoe UI draw proportional figures.
+pub fn tabular(weight: fastframe_fonts::Weight, size: f32) -> egui::FontId {
+    egui::FontId::new(size, tabular_family(weight))
+}
+
+fn tabular_family(weight: fastframe_fonts::Weight) -> egui::FontFamily {
+    egui::FontFamily::Name(format!("zapfast-tabular-{}", weight.name()).into())
+}
+
 /// Installs fonts, icons, and base style.
 pub fn install(ctx: &egui::Context) {
     install_fonts(ctx);
@@ -480,7 +491,7 @@ pub fn apply(ctx: &egui::Context, palette: &Palette) {
 /// The platform's interface font at four weights (Inter where there is
 /// none, and in tests, so layouts do not depend on the machine), egui's own
 /// fonts behind it, and installed fonts for the scripts it lacks, hinted as
-/// the desktop asks.
+/// the desktop asks. Inter also draws the [`tabular`] timers.
 fn install_fonts(ctx: &egui::Context) {
     let primary = if cfg!(test) {
         fastframe_fonts::Primary::Inter
@@ -490,8 +501,28 @@ fn install_fonts(ctx: &egui::Context) {
     let mut fonts = fastframe_fonts::FontSetup::default()
         .primary(primary)
         .definitions();
+    add_tabular(&mut fonts);
     text_rendering().apply_to(&mut fonts);
     ctx.set_fonts(fonts);
+}
+
+/// Registers Inter at each weight as the [`tabular`] families, each falling
+/// back like the interface family of the same weight.
+fn add_tabular(fonts: &mut egui::FontDefinitions) {
+    use fastframe_fonts::Weight;
+    for weight in Weight::ALL {
+        let name = format!("zapfast-tabular-{}", weight.name());
+        let mut data = egui::FontData::from_static(fastframe_fonts::INTER);
+        data.tweak.coords = egui::epaint::text::VariationCoords::new([(b"wght", weight.value())]);
+        fonts
+            .font_data
+            .insert(name.clone(), std::sync::Arc::new(data));
+        let mut family = vec![name];
+        if let Some(behind) = fonts.families.get(&weight.family()) {
+            family.extend(behind.iter().cloned());
+        }
+        fonts.families.insert(tabular_family(weight), family);
+    }
 }
 
 /// The desktop's text rendering: read once, on the first window, and kept
@@ -1082,6 +1113,44 @@ pub fn titlebar_inset(ctx: &egui::Context) -> f32 {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Timers count in Inter's tabular figures whatever face draws the
+    /// rest, and fall back like the interface text of their weight.
+    #[test]
+    fn timers_count_in_figures_of_one_width() {
+        use fastframe_fonts::Weight;
+        let mut fonts = fastframe_fonts::FontSetup::default().definitions();
+        add_tabular(&mut fonts);
+        for weight in Weight::ALL {
+            let family = &fonts.families[&tabular_family(weight)];
+            assert_eq!(family[0], format!("zapfast-tabular-{}", weight.name()));
+            assert_eq!(family[1..], fonts.families[&weight.family()][..]);
+        }
+        let ctx = egui::Context::default();
+        ctx.set_fonts(fonts);
+        let mut output = ctx.run_ui(egui::RawInput::default(), |_| {});
+        output.textures_delta.clear();
+        let widths: Vec<f32> = ["0:00", "1:11", "8:48"]
+            .into_iter()
+            .map(|time| {
+                ctx.fonts_mut(|fonts| {
+                    fonts
+                        .layout_no_wrap(
+                            time.into(),
+                            tabular(Weight::Medium, 14.0),
+                            egui::Color32::WHITE,
+                        )
+                        .size()
+                        .x
+                })
+            })
+            .collect();
+        ctx.tex_manager().write().take_delta().clear();
+        assert!(
+            widths.iter().all(|width| (width - widths[0]).abs() < 0.01),
+            "{widths:?}"
+        );
+    }
 
     #[test]
     fn raised_surfaces_get_a_lit_edge_and_a_denser_shadow() {

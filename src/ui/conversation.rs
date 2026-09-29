@@ -6205,9 +6205,11 @@ fn video_controls(
         crate::util::duration(status.position.as_secs() as u32),
         crate::util::duration(status.total.as_secs() as u32)
     );
-    let galley = ui
-        .painter()
-        .layout_no_wrap(time, theme::medium(11.5), Color32::WHITE);
+    let galley = ui.painter().layout_no_wrap(
+        time,
+        theme::tabular(fastframe_fonts::Weight::Medium, 11.5),
+        Color32::WHITE,
+    );
     let text = pos2(toggle.right() + 4.0, bar.center().y - galley.size().y / 2.0);
     let track = Rect::from_min_max(
         pos2(text.x + galley.size().x + 10.0, bar.center().y - 8.0),
@@ -6355,9 +6357,11 @@ fn video_note(
                 .or_else(|| media.path.is_none().then(|| crate::util::bytes(media.size))),
         };
         if let Some(label) = label {
-            let galley = ui
-                .painter()
-                .layout_no_wrap(label, theme::medium(11.5), Color32::WHITE);
+            let galley = ui.painter().layout_no_wrap(
+                label,
+                theme::tabular(fastframe_fonts::Weight::Medium, 11.5),
+                Color32::WHITE,
+            );
             let chip = Rect::from_center_size(
                 pos2(center.x, picture.bottom() - galley.size().y / 2.0 - 16.0),
                 galley.size() + vec2(12.0, 6.0),
@@ -6685,11 +6689,16 @@ fn voice_player(
                         .map(crate::util::duration)
                         .unwrap_or_else(|| crate::util::bytes(media.size)),
                 };
-                let text = match &media.state {
-                    MediaState::Failed(error) => format!("{error}. Click to retry."),
-                    _ => shown,
+                let (text, font) = match &media.state {
+                    MediaState::Failed(error) => {
+                        (format!("{error}. Click to retry."), theme::regular(11.5))
+                    }
+                    _ => (
+                        shown,
+                        theme::tabular(fastframe_fonts::Weight::Regular, 11.5),
+                    ),
                 };
-                theme::text(ui, text, theme::regular(11.5), palette.secondary);
+                theme::text(ui, text, font, palette.secondary);
             });
             // Speed chip, cycling 1x, 1.5x, and 2x like the phone. The
             // message menu lists every speed, including 1.25x and 1.75x.
@@ -6785,7 +6794,7 @@ fn recording_strip(app: &mut App, ui: &mut egui::Ui) {
             theme::text(
                 ui,
                 crate::util::duration(elapsed.as_secs() as u32),
-                theme::medium(14.0),
+                theme::tabular(fastframe_fonts::Weight::Medium, 14.0),
                 palette.text,
             );
             // Recent audio levels, newest on the right against send.
