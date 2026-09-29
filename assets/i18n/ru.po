@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: ZapFast\n"
 "Report-Msgid-Bugs-To: https://github.com/crmne/zapfast/issues/new?"
 "template=translation.yml\n"
-"POT-Creation-Date: 2026-09-26 22:04+0200\n"
+"POT-Creation-Date: 2026-09-29 12:06+0200\n"
 "PO-Revision-Date: 2026-09-22 00:00-0300\n"
 "Last-Translator: ZapFast contributors\n"
 "Language-Team: Russian\n"
@@ -174,12 +174,12 @@ msgid "Add to favorites"
 msgstr "Добавить в избранное"
 
 #: src/ui/chats.rs:1025 src/ui/chats.rs:1397 src/ui/conversation.rs:212
-#: src/ui/dialogs.rs:1140 src/ui/dialogs.rs:1661
+#: src/ui/dialogs.rs:1147 src/ui/dialogs.rs:1668
 msgid "Leave group"
 msgstr "Покинуть группу"
 
 #: src/ui/chats.rs:1026 src/ui/chats.rs:1395 src/ui/conversation.rs:210
-#: src/ui/dialogs.rs:1138 src/ui/dialogs.rs:1659
+#: src/ui/dialogs.rs:1145 src/ui/dialogs.rs:1666
 msgid "Leave channel"
 msgstr "Покинуть канал"
 
@@ -271,39 +271,44 @@ msgstr[2] "{} непрочитанных сообщений"
 msgid "Open in system player"
 msgstr "Открыть в системном плеере"
 
-#: src/ui/conversation.rs:3162 src/ui/conversation.rs:3860
+#: src/ui/conversation.rs:3162 src/ui/conversation.rs:3870
 #: src/ui/message_info.rs:17
 msgid "Message info"
 msgstr "Данные сообщения"
 
-#: src/ui/conversation.rs:4194
+#: src/ui/conversation.rs:3813 src/ui/image_preview.rs:61
+#: src/ui/image_preview.rs:172
+msgid "Copy image"
+msgstr "Копировать изображение"
+
+#: src/ui/conversation.rs:4204
 #, fuzzy
 msgid "Location"
 msgstr "Геоданные в реальном времени"
 
-#: src/ui/conversation.rs:4220
+#: src/ui/conversation.rs:4230
 msgid "Live location ended"
 msgstr "Трансляция геоданных завершена"
 
-#: src/ui/conversation.rs:4222 src/ui/conversation.rs:4412
+#: src/ui/conversation.rs:4232 src/ui/conversation.rs:4422
 msgid "Live location"
 msgstr "Геоданные в реальном времени"
 
-#: src/ui/conversation.rs:4232
+#: src/ui/conversation.rs:4242
 #, rust-format
 msgid "Updated {time}"
 msgstr "Обновлено в {time}"
 
-#: src/ui/conversation.rs:4282
+#: src/ui/conversation.rs:4292
 #, fuzzy
 msgid "Chat"
 msgstr "Чаты"
 
-#: src/ui/conversation.rs:4296
+#: src/ui/conversation.rs:4306
 msgid "Add"
 msgstr ""
 
-#: src/ui/conversation.rs:4341
+#: src/ui/conversation.rs:4351
 #, rust-format
 msgid "{} sticker"
 msgid_plural "{} stickers"
@@ -311,31 +316,31 @@ msgstr[0] "{} стикер"
 msgstr[1] "{} стикера"
 msgstr[2] "{} стикеров"
 
-#: src/ui/conversation.rs:4354
+#: src/ui/conversation.rs:4364
 msgid "View stickers"
 msgstr "Посмотреть стикеры"
 
-#: src/ui/conversation.rs:4420
+#: src/ui/conversation.rs:4430
 msgid "Open WhatsApp on your phone to follow it."
 msgstr "Откройте WhatsApp на телефоне, чтобы следить за ними."
 
-#: src/ui/conversation.rs:5266
+#: src/ui/conversation.rs:5276
 msgid "Open in a map"
 msgstr "Открыть на карте"
 
-#: src/ui/conversation.rs:5825
+#: src/ui/conversation.rs:5835
 msgid "Pause"
 msgstr "Пауза"
 
-#: src/ui/conversation.rs:5827 src/ui/settings.rs:1420
+#: src/ui/conversation.rs:5837 src/ui/settings.rs:1420
 msgid "Play"
 msgstr "Воспроизвести"
 
-#: src/ui/conversation.rs:5850
+#: src/ui/conversation.rs:5860
 msgid "Unmute"
 msgstr "Включить звук"
 
-#: src/ui/conversation.rs:5852
+#: src/ui/conversation.rs:5862
 msgid "Mute"
 msgstr "Выключить звук"
 
@@ -379,58 +384,58 @@ msgstr "Эмодзи, которые его описывают, например
 msgid "Send"
 msgstr "Отправить"
 
-#: src/ui/dialogs.rs:1020 src/ui/dialogs.rs:1168 src/ui/settings.rs:1223
+#: src/ui/dialogs.rs:1020 src/ui/dialogs.rs:1175 src/ui/settings.rs:1223
 msgid "Cancel"
 msgstr "Отмена"
 
-#: src/ui/dialogs.rs:1122
+#: src/ui/dialogs.rs:1129
 msgid "Leave this channel?"
 msgstr "Покинуть этот канал?"
 
-#: src/ui/dialogs.rs:1124
+#: src/ui/dialogs.rs:1131
 msgid "Leave this group?"
 msgstr "Покинуть эту группу?"
 
-#: src/ui/dialogs.rs:1131
+#: src/ui/dialogs.rs:1138
 msgid ""
 "You will not receive new messages. The local history stays on this computer."
 msgstr ""
 "Вы не будете получать новые сообщения. Локальная история остаётся на этом "
 "компьютере."
 
-#: src/ui/dialogs.rs:1151
+#: src/ui/dialogs.rs:1158
 msgid "Leave channel and archive"
 msgstr "Покинуть канал и архивировать"
 
-#: src/ui/dialogs.rs:1153
+#: src/ui/dialogs.rs:1160
 msgid "Leave group and archive"
 msgstr "Покинуть группу и архивировать"
 
-#: src/ui/dialogs.rs:1378
+#: src/ui/dialogs.rs:1385
 msgid "Also save to your phone's contacts"
 msgstr "Также сохранить в контакты телефона"
 
-#: src/ui/dialogs.rs:1443
+#: src/ui/dialogs.rs:1450
 msgid "Group"
 msgstr "Группа"
 
-#: src/ui/dialogs.rs:1445
+#: src/ui/dialogs.rs:1452
 msgid "Channel"
 msgstr "Канал"
 
-#: src/ui/dialogs.rs:1447
+#: src/ui/dialogs.rs:1454
 msgid "Contact"
 msgstr "Контакт"
 
-#: src/ui/dialogs.rs:1492
+#: src/ui/dialogs.rs:1499
 msgid "Edit group name"
 msgstr "Изменить название группы"
 
-#: src/ui/dialogs.rs:1622
+#: src/ui/dialogs.rs:1629
 msgid "Saving…"
 msgstr "Сохранение…"
 
-#: src/ui/dialogs.rs:1632
+#: src/ui/dialogs.rs:1639
 #, rust-format
 msgid "{} member"
 msgid_plural "{} members"
@@ -438,27 +443,27 @@ msgstr[0] "{} участник"
 msgstr[1] "{} участника"
 msgstr[2] "{} участников"
 
-#: src/ui/dialogs.rs:1895
+#: src/ui/dialogs.rs:1902
 msgid "Change group photo"
 msgstr "Изменить фото группы"
 
-#: src/ui/dialogs.rs:1901
+#: src/ui/dialogs.rs:1908
 msgid "Change photo"
 msgstr "Изменить фото"
 
-#: src/ui/dialogs.rs:1902
+#: src/ui/dialogs.rs:1909
 msgid "Remove photo"
 msgstr "Удалить фото"
 
-#: src/ui/dialogs.rs:1942
+#: src/ui/dialogs.rs:1949
 msgid "Group name"
 msgstr "Название группы"
 
-#: src/ui/dialogs.rs:1985
+#: src/ui/dialogs.rs:1992
 msgid "Save name (Enter)"
 msgstr "Сохранить имя (Enter)"
 
-#: src/ui/dialogs.rs:1997
+#: src/ui/dialogs.rs:2004
 msgid "Cancel (Escape)"
 msgstr "Отмена (Escape)"
 
@@ -929,28 +934,28 @@ msgstr ""
 "Не отправлено: сообщение, на которое вы отвечаете, недоступно на этом "
 "компьютере. Отмените ответ, чтобы отправить без цитаты."
 
-#: src/app.rs:4006
+#: src/app.rs:4002
 msgid "Added to favorites"
 msgstr "Добавлено в избранное"
 
-#: src/app.rs:4081
+#: src/app.rs:4077
 msgid "Sending the sticker pack…"
 msgstr "Отправка набора стикеров…"
 
-#: src/app.rs:4371 src/ui/labels.rs:237
+#: src/app.rs:4367 src/ui/labels.rs:237
 #, rust-format
 msgid "You have {limit} labels, the most ZapFast keeps."
 msgstr "У вас {limit} меток — больше ZapFast не хранит."
 
-#: src/app.rs:4936
+#: src/app.rs:4932
 msgid "This video opens in your system player"
 msgstr "Это видео откроется в системном плеере"
 
-#: src/app.rs:5427
+#: src/app.rs:5423
 msgid "Copied image"
 msgstr "Изображение скопировано"
 
-#: src/app.rs:5430 src/app.rs:5435
+#: src/app.rs:5426 src/app.rs:5431
 msgid "Failed to copy image"
 msgstr "Не удалось скопировать изображение"
 
@@ -1285,10 +1290,6 @@ msgstr "Как время посещения"
 msgctxt "privacy"
 msgid "Silence unknown callers"
 msgstr "Заглушать неизвестных абонентов"
-
-#: src/ui/image_preview.rs:61 src/ui/image_preview.rs:172
-msgid "Copy image"
-msgstr "Копировать изображение"
 
 #: src/ui/image_preview.rs:173
 msgid "Save as…"

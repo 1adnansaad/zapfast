@@ -3805,6 +3805,16 @@ fn context_menu(ui: &mut egui::Ui, view: &View<'_>, message: &Message, actions: 
                 if widgets::menu_item(ui, &palette, Some(Icon::ExternalLink), &open) {
                     actions.push(Action::OpenFile(path.clone()));
                 }
+                if matches!(message.content, Content::Image { .. })
+                    && widgets::menu_item(
+                        ui,
+                        &palette,
+                        Some(Icon::Copy),
+                        &crate::i18n::gettext(view.locale, "Copy image"),
+                    )
+                {
+                    actions.push(Action::CopyImage(path.clone()));
+                }
                 if widgets::menu_item(ui, &palette, Some(Icon::Download), "Save as…") {
                     actions.push(Action::SaveAttachmentAs {
                         path: path.clone(),

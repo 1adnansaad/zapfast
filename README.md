@@ -238,7 +238,8 @@ See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
   Double-click to switch between fitting the window and the original size.
   Copy the image to your clipboard via the copy button in the header, the
   right-click menu (**Copy image**), or
-  Ctrl+C (Cmd+C on macOS). Click a video to play it in its message, with
+  Ctrl+C (Cmd+C on macOS); a downloaded image's message menu has **Copy image**
+  too, without opening the preview. Click a video to play it in its message, with
   sound, a seek bar, and a mute switch; round video messages play inside their
   circle with a progress ring, like on the phone. A video that is not
   downloaded yet downloads first and then plays. Videos in codecs other than
