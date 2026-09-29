@@ -114,10 +114,12 @@ See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
   face the right way. As in WhatsApp, a message whose first strong character is
   Hebrew or Arabic is aligned to the right, with its time on its own line when
   the text has more than one. Carets and copied text stay on the logical message.
-  Emoji use the bundled Noto
-  Color Emoji on macOS and Windows. On Linux, ZapFast prefers an installed
-  Noto Color Emoji and falls back to the bundled copy. Emoji-only messages
-  are larger.
+  Text uses the system's interface font (San Francisco on macOS, Segoe UI
+  on Windows, the desktop's `system-ui` font on Linux), and emoji look as they
+  do in the system's other apps: Apple Color Emoji on macOS, Segoe UI Emoji on
+  Windows, and the desktop's emoji font on Linux. The bundled Noto Color Emoji
+  draws whatever those lack (country flags on Windows, or every emoji on a
+  Linux desktop without an emoji font). Emoji-only messages are larger.
 - **Readable text.** Secondary text in the built-in light and dark themes
   reaches WCAG AA contrast. Inside message bubbles, times, ticks, and other
   grey text adjust to the bubble's colour, in custom themes as well.

@@ -37,8 +37,9 @@ and icon:
 {{ app }} needs the standard egui libraries and ALSA:
 `libglvnd`, `libxkbcommon`, `wayland`, `libx11`, and `alsa-lib` (on
 Debian or Ubuntu: `libasound2`, `libgl1`, `libxkbcommon0`, `libwayland-client0`).
-For color emoji, install `noto-fonts-emoji` (`fonts-noto-color-emoji` on
-Debian). The file picker uses `xdg-desktop-portal`.
+Emoji come from the desktop's colour emoji font when one is installed
+(`noto-fonts-emoji`, `fonts-noto-color-emoji` on Debian), else from the copy
+{{ app }} bundles. The file picker uses `xdg-desktop-portal`.
 
 ## macOS
 

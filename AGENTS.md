@@ -117,9 +117,13 @@ protocol. These notes are for coding agents and new contributors.
   and in the `fastframe_icons::icons!` table; an icon fastframe-icons already
   ships is named there as `lucide "name"` instead of copied.
 - `src/markup.rs` turns WhatsApp's text markup, links, and mentions into an
-  egui `LayoutJob`; `src/emoji.rs` swaps every emoji for a placeholder
-  glyph at layout time and paints the desktop's colour emoji bitmap over
-  it afterwards (resolving sequences through the font's GSUB ligatures).
+  egui `LayoutJob`; `src/emoji.rs` hands emoji to fastframe-emoji, which
+  swaps every emoji for a placeholder glyph at layout time and paints the
+  platform's picture over it afterwards (Apple Color Emoji, Segoe UI Emoji
+  through DirectWrite, or the desktop's bitmap emoji font, with the bundled
+  Noto behind them). New pictures are drawn on its worker thread; tests and
+  demo builds draw them inside the frame. The interface font is the
+  platform's own (`fastframe_fonts::Primary::System`), and Inter in tests.
   Any text that can hold an emoji goes through `widgets::line` /
   `widgets::rich_text` or `markup::layout`, never a bare `Label`.
 - `src/animation.rs` plays animated stickers and GIFs: WebP/GIF frames

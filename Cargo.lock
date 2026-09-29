@@ -1843,9 +1843,27 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7360491ce676a36bf9bb3c56c1aa791658183a54d2744120f27285738d90465a"
 
 [[package]]
+name = "fastframe-emoji"
+version = "0.2.0"
+source = "git+https://github.com/crmne/fastframe?tag=v0.2.0#574b7387edf283a6f45ddd470102f6252e60de93"
+dependencies = [
+ "egui",
+ "fastframe-fonts",
+ "harfrust",
+ "log",
+ "memmap2",
+ "png 0.18.1",
+ "skrifa",
+ "unicode-segmentation",
+ "windows 0.62.2",
+ "windows-core 0.62.2",
+ "windows-numerics 0.3.1",
+]
+
+[[package]]
 name = "fastframe-fonts"
-version = "0.1.7"
-source = "git+https://github.com/crmne/fastframe?tag=v0.1.7#9cb28309097ef313ca38570e4d9d53faed92bdd1"
+version = "0.2.0"
+source = "git+https://github.com/crmne/fastframe?tag=v0.2.0#574b7387edf283a6f45ddd470102f6252e60de93"
 dependencies = [
  "directories",
  "egui",
@@ -1857,8 +1875,8 @@ dependencies = [
 
 [[package]]
 name = "fastframe-i18n"
-version = "0.1.7"
-source = "git+https://github.com/crmne/fastframe?tag=v0.1.7#9cb28309097ef313ca38570e4d9d53faed92bdd1"
+version = "0.2.0"
+source = "git+https://github.com/crmne/fastframe?tag=v0.2.0#574b7387edf283a6f45ddd470102f6252e60de93"
 dependencies = [
  "include-po",
  "polib",
@@ -1868,16 +1886,16 @@ dependencies = [
 
 [[package]]
 name = "fastframe-icons"
-version = "0.1.7"
-source = "git+https://github.com/crmne/fastframe?tag=v0.1.7#9cb28309097ef313ca38570e4d9d53faed92bdd1"
+version = "0.2.0"
+source = "git+https://github.com/crmne/fastframe?tag=v0.2.0#574b7387edf283a6f45ddd470102f6252e60de93"
 dependencies = [
  "egui",
 ]
 
 [[package]]
 name = "fastframe-log"
-version = "0.1.7"
-source = "git+https://github.com/crmne/fastframe?tag=v0.1.7#9cb28309097ef313ca38570e4d9d53faed92bdd1"
+version = "0.2.0"
+source = "git+https://github.com/crmne/fastframe?tag=v0.2.0#574b7387edf283a6f45ddd470102f6252e60de93"
 dependencies = [
  "env_logger",
  "jiff",
@@ -1886,8 +1904,8 @@ dependencies = [
 
 [[package]]
 name = "fastframe-macos"
-version = "0.1.7"
-source = "git+https://github.com/crmne/fastframe?tag=v0.1.7#9cb28309097ef313ca38570e4d9d53faed92bdd1"
+version = "0.2.0"
+source = "git+https://github.com/crmne/fastframe?tag=v0.2.0#574b7387edf283a6f45ddd470102f6252e60de93"
 dependencies = [
  "eframe",
  "egui",
@@ -1898,8 +1916,8 @@ dependencies = [
 
 [[package]]
 name = "fastframe-shell"
-version = "0.1.7"
-source = "git+https://github.com/crmne/fastframe?tag=v0.1.7#9cb28309097ef313ca38570e4d9d53faed92bdd1"
+version = "0.2.0"
+source = "git+https://github.com/crmne/fastframe?tag=v0.2.0#574b7387edf283a6f45ddd470102f6252e60de93"
 dependencies = [
  "eframe",
  "egui",
@@ -1908,8 +1926,8 @@ dependencies = [
 
 [[package]]
 name = "fastframe-text"
-version = "0.1.7"
-source = "git+https://github.com/crmne/fastframe?tag=v0.1.7#9cb28309097ef313ca38570e4d9d53faed92bdd1"
+version = "0.2.0"
+source = "git+https://github.com/crmne/fastframe?tag=v0.2.0#574b7387edf283a6f45ddd470102f6252e60de93"
 dependencies = [
  "egui",
  "zbus",
@@ -1917,8 +1935,8 @@ dependencies = [
 
 [[package]]
 name = "fastframe-theme"
-version = "0.1.7"
-source = "git+https://github.com/crmne/fastframe?tag=v0.1.7#9cb28309097ef313ca38570e4d9d53faed92bdd1"
+version = "0.2.0"
+source = "git+https://github.com/crmne/fastframe?tag=v0.2.0#574b7387edf283a6f45ddd470102f6252e60de93"
 dependencies = [
  "directories",
  "egui",
@@ -1930,8 +1948,8 @@ dependencies = [
 
 [[package]]
 name = "fastframe-tray"
-version = "0.1.7"
-source = "git+https://github.com/crmne/fastframe?tag=v0.1.7#9cb28309097ef313ca38570e4d9d53faed92bdd1"
+version = "0.2.0"
+source = "git+https://github.com/crmne/fastframe?tag=v0.2.0#574b7387edf283a6f45ddd470102f6252e60de93"
 dependencies = [
  "ksni",
  "log",
@@ -1944,8 +1962,8 @@ dependencies = [
 
 [[package]]
 name = "fastframe-update"
-version = "0.1.7"
-source = "git+https://github.com/crmne/fastframe?tag=v0.1.7#9cb28309097ef313ca38570e4d9d53faed92bdd1"
+version = "0.2.0"
+source = "git+https://github.com/crmne/fastframe?tag=v0.2.0#574b7387edf283a6f45ddd470102f6252e60de93"
 dependencies = [
  "anyhow",
  "reqwest",
@@ -7569,6 +7587,7 @@ dependencies = [
  "egui_extras",
  "emojis",
  "env_logger",
+ "fastframe-emoji",
  "fastframe-fonts",
  "fastframe-i18n",
  "fastframe-icons",

@@ -477,10 +477,19 @@ pub fn apply(ctx: &egui::Context, palette: &Palette) {
     ctx.set_global_style(style);
 }
 
-/// Inter at four weights, egui's own fonts behind it, and installed fonts
-/// for the scripts Inter lacks, hinted as the desktop asks.
+/// The platform's interface font at four weights (Inter where there is
+/// none, and in tests, so layouts do not depend on the machine), egui's own
+/// fonts behind it, and installed fonts for the scripts it lacks, hinted as
+/// the desktop asks.
 fn install_fonts(ctx: &egui::Context) {
-    let mut fonts = fastframe_fonts::FontSetup::default().definitions();
+    let primary = if cfg!(test) {
+        fastframe_fonts::Primary::Inter
+    } else {
+        fastframe_fonts::Primary::System
+    };
+    let mut fonts = fastframe_fonts::FontSetup::default()
+        .primary(primary)
+        .definitions();
     text_rendering().apply_to(&mut fonts);
     ctx.set_fonts(fonts);
 }
