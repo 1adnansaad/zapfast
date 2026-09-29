@@ -491,6 +491,7 @@ pub enum Command {
     ContactSaved {
         id: String,
         name: String,
+        first_name: Option<String>,
         error: Option<String>,
     },
     /// Checks a number, optionally saves it, and opens its chat.
