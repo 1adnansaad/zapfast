@@ -185,7 +185,7 @@ msgstr "Envíate un mensaje"
 
 #: src/ui/chats.rs:1040
 msgid "Draft:"
-msgstr ""
+msgstr "Borrador:"
 
 #: src/ui/chats.rs:1117 src/ui/chats.rs:1484 src/ui/picker.rs:1581
 msgid "Remove from favorites"

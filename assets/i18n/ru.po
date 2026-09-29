@@ -186,7 +186,7 @@ msgstr "Написать себе"
 
 #: src/ui/chats.rs:1040
 msgid "Draft:"
-msgstr ""
+msgstr "Черновик:"
 
 #: src/ui/chats.rs:1117 src/ui/chats.rs:1484 src/ui/picker.rs:1581
 msgid "Remove from favorites"
