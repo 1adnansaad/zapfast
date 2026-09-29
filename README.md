@@ -206,7 +206,8 @@ See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
   focus to it; invoking search keeps focus in search, and
   Escape clears search and returns to the composer; another Escape closes the
   chat and saves your text draft. Drafts are kept in the encrypted archive, so
-  unsent text survives closing ZapFast and restarting. Open menus, dialogs, and unfinished actions
+  unsent text survives closing ZapFast and restarting, and the chat list shows
+  a chat's draft in its row, after "Draft:". Open menus, dialogs, and unfinished actions
   are dismissed first. Type `:name` to autocomplete
   an emoji without leaving the composer, or `@` in a group to mention a member.
   Reply, react with any emoji, edit, forward, delete, and check when a message was sent,
