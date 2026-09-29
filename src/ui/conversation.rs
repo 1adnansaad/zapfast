@@ -5616,8 +5616,9 @@ fn thumbnail_uri(ctx: &egui::Context, chat: &str, id: &str, bytes: &[u8]) -> Str
 const PICTURE_WIDTH: f32 = CARD_WIDTH;
 const PICTURE_HEIGHT: f32 = 440.0;
 const STICKER_SIDE: f32 = 180.0;
-/// Width of an image plus bubble padding.
-const HEADER_ROW: f32 = 44.0;
+/// Height of a header row, the chat list's and the conversation's alike, so
+/// their titles share a centre line.
+pub(crate) const HEADER_ROW: f32 = 44.0;
 
 /// Fits an image within bounds without upscaling and with a readable minimum.
 fn fit_picture(width: f32, height: f32, max_width: f32, max_height: f32) -> Vec2 {

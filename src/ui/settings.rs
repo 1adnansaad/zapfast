@@ -284,7 +284,7 @@ fn search(app: &mut App, ui: &mut egui::Ui) {
         egui::Id::new(SEARCH_ID),
         &mut text,
         &crate::i18n::gettext(app.locale, "Search settings"),
-        ui.available_width().min(360.0),
+        ui.available_width(),
     );
     if text != app.settings_search {
         app.actions.push(Action::SearchSettings(text));

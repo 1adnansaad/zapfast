@@ -103,132 +103,140 @@ fn header(app: &mut App, ui: &mut egui::Ui) {
         return;
     }
     let palette = app.palette;
+    // The same margins as the conversation header beside it, and a row as
+    // tall as its own, so the two titles share a centre line. The right
+    // margin matches the left, so the search field and the chips end where
+    // the rows' timestamps do.
     Frame::new()
         .inner_margin(Margin {
             left: 14,
-            right: 10,
-            top: 12,
+            right: 14,
+            top: 8,
             bottom: 8,
         })
         .show(ui, |ui| {
-            ui.horizontal(|ui| {
-                if app.show_archived || app.locked_folder {
-                    if theme::icon_button(
-                        ui,
-                        Icon::ArrowLeft,
-                        18.0,
-                        palette.secondary,
-                        palette.text,
-                        "Back to chats",
-                    )
-                    .tab_stop(Stop::Back)
-                    .clicked()
-                    {
-                        app.show_archived = false;
-                        if app.locked_folder {
-                            app.actions.push(Action::CloseLockedFolder);
+            ui.allocate_ui_with_layout(
+                vec2(ui.available_width(), super::conversation::HEADER_ROW),
+                Layout::left_to_right(Align::Center),
+                |ui| {
+                    if app.show_archived || app.locked_folder {
+                        if theme::icon_button(
+                            ui,
+                            Icon::ArrowLeft,
+                            18.0,
+                            palette.secondary,
+                            palette.text,
+                            "Back to chats",
+                        )
+                        .tab_stop(Stop::Back)
+                        .clicked()
+                        {
+                            app.show_archived = false;
+                            if app.locked_folder {
+                                app.actions.push(Action::CloseLockedFolder);
+                            }
                         }
+                        theme::text(
+                            ui,
+                            if app.locked_folder {
+                                "Locked chats"
+                            } else {
+                                "Archived"
+                            },
+                            theme::bold(20.0),
+                            palette.text,
+                        );
+                    } else {
+                        let me = app.me.clone().unwrap_or_default();
+                        let name = app.me_name.clone().unwrap_or_else(|| "You".to_owned());
+                        let picture = app.avatar(&me);
+                        let tooltip = match &app.me_about {
+                            Some(about) => format!("{name}\n{about}"),
+                            None => name.clone(),
+                        };
+                        let response = widgets::clickable_avatar(
+                            ui,
+                            &palette,
+                            &name,
+                            &me,
+                            34.0,
+                            picture.as_deref(),
+                            // The label follows the action: while Settings are
+                            // showing, this click closes them.
+                            if app.page == Page::Settings {
+                                "Close settings"
+                            } else {
+                                "Your profile and settings"
+                            },
+                        )
+                        .tab_stop(Stop::Profile)
+                        .on_hover_text(tooltip)
+                        .on_hover_cursor(egui::CursorIcon::PointingHand);
+                        if response.clicked() {
+                            app.actions.push(Action::ToggleSettings);
+                        }
+                        ui.add_space(2.0);
+                        theme::text(
+                            ui,
+                            crate::i18n::gettext(app.locale, "Chats"),
+                            theme::bold(20.0),
+                            palette.text,
+                        );
                     }
-                    theme::text(
-                        ui,
-                        if app.locked_folder {
-                            "Locked chats"
-                        } else {
-                            "Archived"
-                        },
-                        theme::bold(20.0),
-                        palette.text,
-                    );
-                } else {
-                    let me = app.me.clone().unwrap_or_default();
-                    let name = app.me_name.clone().unwrap_or_else(|| "You".to_owned());
-                    let picture = app.avatar(&me);
-                    let tooltip = match &app.me_about {
-                        Some(about) => format!("{name}\n{about}"),
-                        None => name.clone(),
-                    };
-                    let response = widgets::clickable_avatar(
-                        ui,
-                        &palette,
-                        &name,
-                        &me,
-                        34.0,
-                        picture.as_deref(),
-                        // The label follows the action: while Settings are
-                        // showing, this click closes them.
-                        if app.page == Page::Settings {
-                            "Close settings"
-                        } else {
-                            "Your profile and settings"
-                        },
-                    )
-                    .tab_stop(Stop::Profile)
-                    .on_hover_text(tooltip)
-                    .on_hover_cursor(egui::CursorIcon::PointingHand);
-                    if response.clicked() {
-                        app.actions.push(Action::ToggleSettings);
-                    }
-                    ui.add_space(2.0);
-                    theme::text(
-                        ui,
-                        crate::i18n::gettext(app.locale, "Chats"),
-                        theme::bold(20.0),
-                        palette.text,
-                    );
-                }
-                ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
-                    if theme::icon_button(
-                        ui,
-                        Icon::Settings,
-                        18.0,
-                        if app.page == Page::Settings {
-                            palette.accent
-                        } else {
-                            palette.secondary
-                        },
-                        palette.text,
-                        // Same as the avatar: the label says what the click
-                        // does now, not what it opened.
-                        if app.page == Page::Settings {
-                            "Close settings (Ctrl+,)"
-                        } else {
-                            "Settings (Ctrl+,)"
-                        },
-                    )
-                    .tab_stop(Stop::Settings)
-                    .clicked()
-                    {
-                        app.actions.push(Action::ToggleSettings);
-                    }
-                    if theme::icon_button(
-                        ui,
-                        Icon::SquarePen,
-                        18.0,
-                        palette.secondary,
-                        palette.text,
-                        "New chat",
-                    )
-                    .tab_stop(Stop::NewChat)
-                    .clicked()
-                    {
-                        app.actions
-                            .push(Action::ShowDialog(crate::model::Dialog::NewChat));
-                    }
-                    if theme::icon_button(
-                        ui,
-                        Icon::PanelLeft,
-                        18.0,
-                        palette.secondary,
-                        palette.text,
-                        "Hide the chat list (Ctrl+B)",
-                    )
-                    .tab_stop(Stop::Sidebar)
-                    .clicked()
-                    {
-                        app.actions.push(Action::ToggleSidebar);
-                    }
-                });
-            });
+                    ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                        if theme::icon_button(
+                            ui,
+                            Icon::Settings,
+                            18.0,
+                            if app.page == Page::Settings {
+                                palette.accent
+                            } else {
+                                palette.secondary
+                            },
+                            palette.text,
+                            // Same as the avatar: the label says what the click
+                            // does now, not what it opened.
+                            if app.page == Page::Settings {
+                                "Close settings (Ctrl+,)"
+                            } else {
+                                "Settings (Ctrl+,)"
+                            },
+                        )
+                        .tab_stop(Stop::Settings)
+                        .clicked()
+                        {
+                            app.actions.push(Action::ToggleSettings);
+                        }
+                        if theme::icon_button(
+                            ui,
+                            Icon::SquarePen,
+                            18.0,
+                            palette.secondary,
+                            palette.text,
+                            "New chat",
+                        )
+                        .tab_stop(Stop::NewChat)
+                        .clicked()
+                        {
+                            app.actions
+                                .push(Action::ShowDialog(crate::model::Dialog::NewChat));
+                        }
+                        if theme::icon_button(
+                            ui,
+                            Icon::PanelLeft,
+                            18.0,
+                            palette.secondary,
+                            palette.text,
+                            "Hide the chat list (Ctrl+B)",
+                        )
+                        .tab_stop(Stop::Sidebar)
+                        .clicked()
+                        {
+                            app.actions.push(Action::ToggleSidebar);
+                        }
+                    });
+                },
+            );
             ui.add_space(6.0);
             let id = egui::Id::new("chat-search");
             let width = ui.available_width();
@@ -364,13 +372,16 @@ pub fn filter_chip_id(filter: ChatFilter) -> egui::Id {
 
 /// Filter chips under the search field. Search lists every match, so the
 /// chips hide there.
+/// Width of the fade over the filter chips' right edge.
+const CHIP_FADE: f32 = 16.0;
+
 fn filter_chips(app: &mut App, ui: &mut egui::Ui) {
     if !app.locked_folder_open() && !app.search.trim().is_empty() {
         return;
     }
     let palette = app.palette;
     ui.add_space(8.0);
-    egui::ScrollArea::horizontal()
+    let output = egui::ScrollArea::horizontal()
         .id_salt("chat-filters")
         .animated(false)
         .auto_shrink([false, true])
@@ -472,6 +483,12 @@ fn filter_chips(app: &mut App, ui: &mut egui::Ui) {
                 ui.add_space(4.0);
             })
         });
+    // Chips cut off at the edge fade into the panel, which says the row
+    // scrolls on.
+    let hidden = output.content_size.x - output.state.offset.x - output.inner_rect.width();
+    if hidden > 0.5 {
+        widgets::fade_right(ui, output.inner_rect, CHIP_FADE, palette.panel);
+    }
     labels::chip_row(app, ui, &palette);
 }
 
