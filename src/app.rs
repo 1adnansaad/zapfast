@@ -644,6 +644,9 @@ pub struct App {
     /// Cross-thread window repaint handle.
     waker: Waker,
     tray: Option<fastframe_tray::Tray>,
+    /// Whether the tray menu offers "Lock ZapFast": whether an app lock
+    /// password was set when it last changed.
+    tray_lockable: bool,
     /// Whether the app is running without a window.
     pub window_hidden: bool,
     /// Whether window close should keep the process running.
@@ -790,25 +793,24 @@ fn tray_action(event: fastframe_tray::Event, window_hidden: bool) -> Option<Acti
 }
 
 /// The tray item: ZapFast's icon, and a menu to show or hide the window,
-/// to lock it when an app lock password is set, and to quit. The title and
+/// to lock it while an app lock password is set, and to quit. The title and
 /// the menu never name a chat, so they are safe while locked.
 ///
-/// fastframe-tray fixes the menu when the item is made, so a password set
-/// or removed while ZapFast runs changes the menu at the next start; until
-/// then "Lock ZapFast" does nothing without a password.
+/// "Lock ZapFast" is always in the menu, hidden without a password;
+/// `App::sync_tray` shows or hides it as the password is set or removed.
 fn tray_config(lockable: bool) -> fastframe_tray::Config {
     use fastframe_tray::MenuItem;
-    let mut menu = vec![MenuItem::action(TRAY_SHOW, "Show or hide ZapFast")];
-    if lockable {
-        menu.push(MenuItem::action(TRAY_LOCK, "Lock ZapFast"));
-    }
-    menu.extend([MenuItem::Separator, MenuItem::action(TRAY_QUIT, "Quit")]);
     fastframe_tray::Config {
         id: "zapfast",
         title: "ZapFast".into(),
         icon: crate::util::app_icon_rgba,
         template_icon: Some(crate::util::tray_template_rgba),
-        menu,
+        menu: vec![
+            MenuItem::action(TRAY_SHOW, "Show or hide ZapFast"),
+            MenuItem::action(TRAY_LOCK, "Lock ZapFast").visible(lockable),
+            MenuItem::Separator,
+            MenuItem::action(TRAY_QUIT, "Quit"),
+        ],
     }
 }
 
@@ -844,8 +846,8 @@ impl App {
             .ok();
         if options.tray {
             let waker = waker.clone();
-            let lockable = app.settings.app_lock_hash.is_some();
-            app.tray = fastframe_tray::Tray::spawn(tray_config(lockable), move || waker.wake());
+            app.tray =
+                fastframe_tray::Tray::spawn(tray_config(app.tray_lockable), move || waker.wake());
         }
         // The clock preference may run a helper on Linux; keep it off the
         // first frame.
@@ -899,6 +901,7 @@ impl App {
         let locale = crate::i18n::resolve(settings.interface_language);
         // With a password set, ZapFast starts locked.
         let app_lock = crate::app_lock::AppLock::new(settings.app_lock_hash.is_some());
+        let tray_lockable = settings.app_lock_hash.is_some();
         let mut app = Self {
             dirs,
             settings,
@@ -1080,6 +1083,7 @@ impl App {
             start_with_system: None,
             waker,
             tray: None,
+            tray_lockable,
             window_hidden: false,
             hide_intent: false,
             wants_show: false,
@@ -1134,6 +1138,7 @@ impl App {
     }
 
     fn handle_tray(&mut self) {
+        self.sync_tray();
         let Some(events) = self.tray.as_ref().map(fastframe_tray::Tray::events) else {
             return;
         };
@@ -1143,6 +1148,19 @@ impl App {
                 .into_iter()
                 .filter_map(|event| tray_action(event, hidden)),
         );
+    }
+
+    /// Offers "Lock ZapFast" in the tray exactly while an app lock password
+    /// is set, so setting or removing one changes the menu at once.
+    fn sync_tray(&mut self) {
+        let lockable = self.settings.app_lock_hash.is_some();
+        if lockable == self.tray_lockable {
+            return;
+        }
+        self.tray_lockable = lockable;
+        if let Some(tray) = &mut self.tray {
+            tray.set_visible(TRAY_LOCK, lockable);
+        }
     }
 
     fn handle_control_commands(&mut self) {
@@ -7266,28 +7284,36 @@ mod tests {
             Some(Action::Quit)
         ));
         assert!(super::tray_action(Event::Menu("other"), false).is_none());
-        let menu = super::tray_config(false).menu;
-        assert_eq!(
-            menu,
-            [
-                fastframe_tray::MenuItem::action(super::TRAY_SHOW, "Show or hide ZapFast"),
-                fastframe_tray::MenuItem::Separator,
-                fastframe_tray::MenuItem::action(super::TRAY_QUIT, "Quit"),
-            ]
-        );
         assert!(matches!(
             super::tray_action(Event::Menu(super::TRAY_LOCK), false),
             Some(Action::LockApp)
         ));
-        assert_eq!(
-            super::tray_config(true).menu,
-            [
-                fastframe_tray::MenuItem::action(super::TRAY_SHOW, "Show or hide ZapFast"),
-                fastframe_tray::MenuItem::action(super::TRAY_LOCK, "Lock ZapFast"),
-                fastframe_tray::MenuItem::Separator,
-                fastframe_tray::MenuItem::action(super::TRAY_QUIT, "Quit"),
-            ]
-        );
+        for lockable in [false, true] {
+            assert_eq!(
+                super::tray_config(lockable).menu,
+                [
+                    fastframe_tray::MenuItem::action(super::TRAY_SHOW, "Show or hide ZapFast"),
+                    fastframe_tray::MenuItem::action(super::TRAY_LOCK, "Lock ZapFast")
+                        .visible(lockable),
+                    fastframe_tray::MenuItem::Separator,
+                    fastframe_tray::MenuItem::action(super::TRAY_QUIT, "Quit"),
+                ]
+            );
+        }
+    }
+
+    /// The tray offers "Lock ZapFast" as soon as a password is set and stops
+    /// as soon as it is removed, not at the next start.
+    #[test]
+    fn the_tray_offers_the_lock_while_a_password_is_set() {
+        let mut app = app();
+        assert!(!app.tray_lockable);
+        app.settings.app_lock_hash = Some(crate::app_lock::verifier("secret"));
+        app.handle_tray();
+        assert!(app.tray_lockable);
+        app.settings.app_lock_hash = None;
+        app.handle_tray();
+        assert!(!app.tray_lockable);
     }
 
     #[test]

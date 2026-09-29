@@ -639,8 +639,8 @@ type a password of at least six characters twice. ZapFast then starts locked
 and locks again after 1 minute, 15 minutes (the default), or 1 hour without
 input in its window, a choice under **Lock after**. Time spent hidden in the
 tray counts as time without input. **Lock ZapFast** in the tray menu and
-`Ctrl+Shift+L` lock it at once. The tray entry appears from the next start
-after a password is set. **Change password…** and **Turn off…** ask for the
+`Ctrl+Shift+L` lock it at once; the tray entry is there while a password is
+set. **Change password…** and **Turn off…** ask for the
 current password first.
 
 While locked the window shows only the lock screen: no chats, names,
