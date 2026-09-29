@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: ZapFast\n"
 "Report-Msgid-Bugs-To: https://github.com/crmne/zapfast/issues/new?"
 "template=translation.yml\n"
-"POT-Creation-Date: 2026-09-29 13:12+0200\n"
+"POT-Creation-Date: 2026-09-29 13:23+0200\n"
 "PO-Revision-Date: 2026-09-25 23:00-0300\n"
 "Last-Translator: ZapFast contributors\n"
 "Language-Team: Chinese (Simplified)\n"
@@ -40,122 +40,122 @@ msgstr "群组"
 msgid "Channels"
 msgstr "频道"
 
-#: src/util.rs:209 src/util.rs:296
+#: src/util.rs:226 src/util.rs:313
 msgid "Yesterday"
 msgstr "昨天"
 
-#: src/util.rs:236
+#: src/util.rs:253
 #, rust-format
 msgid "Yesterday at {time}"
 msgstr "昨天 {time}"
 
-#: src/util.rs:237
+#: src/util.rs:254
 #, rust-format
 msgid "{weekday} at {time}"
 msgstr "{weekday} {time}"
 
-#: src/util.rs:240
+#: src/util.rs:257
 #, rust-format
 msgid "{date} at {time}"
 msgstr "{date} {time}"
 
-#: src/util.rs:266
+#: src/util.rs:283
 #, rust-format
 msgid "last seen today at {time}"
 msgstr "最后上线：今天 {time}"
 
-#: src/util.rs:267
+#: src/util.rs:284
 #, rust-format
 msgid "last seen yesterday at {time}"
 msgstr "最后上线：昨天 {time}"
 
-#: src/util.rs:275
+#: src/util.rs:292
 #, rust-format
 msgid "last seen {weekday} at {time}"
 msgstr "最后上线：{weekday} {time}"
 
-#: src/util.rs:279
+#: src/util.rs:296
 #, rust-format
 msgid "last seen {date}"
 msgstr "最后上线：{date}"
 
-#: src/util.rs:295
+#: src/util.rs:312
 msgid "Today"
 msgstr "今天"
 
-#: src/util.rs:331
+#: src/util.rs:348
 msgid "Monday"
 msgstr "周一"
 
-#: src/util.rs:332
+#: src/util.rs:349
 msgid "Tuesday"
 msgstr "周二"
 
-#: src/util.rs:333
+#: src/util.rs:350
 msgid "Wednesday"
 msgstr "周三"
 
-#: src/util.rs:334
+#: src/util.rs:351
 msgid "Thursday"
 msgstr "周四"
 
-#: src/util.rs:335
+#: src/util.rs:352
 msgid "Friday"
 msgstr "周五"
 
-#: src/util.rs:336
+#: src/util.rs:353
 msgid "Saturday"
 msgstr "周六"
 
-#: src/util.rs:337
+#: src/util.rs:354
 msgid "Sunday"
 msgstr "周日"
 
-#: src/util.rs:345
+#: src/util.rs:362
 msgid "January"
 msgstr "1月"
 
-#: src/util.rs:346
+#: src/util.rs:363
 msgid "February"
 msgstr "2月"
 
-#: src/util.rs:347
+#: src/util.rs:364
 msgid "March"
 msgstr "3月"
 
-#: src/util.rs:348
+#: src/util.rs:365
 msgid "April"
 msgstr "4月"
 
-#: src/util.rs:349
+#: src/util.rs:366
 msgid "May"
 msgstr "5月"
 
-#: src/util.rs:350
+#: src/util.rs:367
 msgid "June"
 msgstr "6月"
 
-#: src/util.rs:351
+#: src/util.rs:368
 msgid "July"
 msgstr "7月"
 
-#: src/util.rs:352
+#: src/util.rs:369
 msgid "August"
 msgstr "8月"
 
-#: src/util.rs:353
+#: src/util.rs:370
 msgid "September"
 msgstr "9月"
 
-#: src/util.rs:354
+#: src/util.rs:371
 msgid "October"
 msgstr "10月"
 
-#: src/util.rs:355
+#: src/util.rs:372
 msgid "November"
 msgstr "11月"
 
-#: src/util.rs:356
+#: src/util.rs:373
 msgid "December"
 msgstr "12月"
 
@@ -179,7 +179,7 @@ msgstr "已锁定"
 msgid "No favorites yet"
 msgstr "还没有收藏"
 
-#: src/ui/chats.rs:857 src/app.rs:1503
+#: src/ui/chats.rs:857 src/app.rs:1539
 msgid "Message yourself"
 msgstr "给自己发消息"
 
@@ -187,7 +187,7 @@ msgstr "给自己发消息"
 msgid "Remove from favorites"
 msgstr "取消收藏"
 
-#: src/ui/chats.rs:1097 src/ui/chats.rs:1464 src/ui/conversation.rs:3851
+#: src/ui/chats.rs:1097 src/ui/chats.rs:1464 src/ui/conversation.rs:3897
 #: src/ui/dialogs.rs:1013 src/ui/picker.rs:1582
 msgid "Add to favorites"
 msgstr "添加到收藏"
@@ -274,106 +274,106 @@ msgstr "语音消息（{duration}）未发送"
 msgid "Discard voice message"
 msgstr "放弃语音消息"
 
-#: src/ui/conversation.rs:1971 src/notify/badge_windows.rs:255
+#: src/ui/conversation.rs:1993 src/notify/badge_windows.rs:255
 #, rust-format
 msgid "{} unread message"
 msgid_plural "{} unread messages"
 msgstr[0] "{} 条未读消息"
 
-#: src/ui/conversation.rs:3220 src/ui/conversation.rs:3860
+#: src/ui/conversation.rs:3266 src/ui/conversation.rs:3906
 msgid "Open in system player"
 msgstr "用系统播放器打开"
 
-#: src/ui/conversation.rs:3221 src/ui/conversation.rs:3929
+#: src/ui/conversation.rs:3267 src/ui/conversation.rs:3975
 #: src/ui/message_info.rs:17
 msgid "Message info"
 msgstr "消息信息"
 
-#: src/ui/conversation.rs:3872 src/ui/image_preview.rs:61
+#: src/ui/conversation.rs:3918 src/ui/image_preview.rs:61
 #: src/ui/image_preview.rs:172
 msgid "Copy image"
 msgstr "复制图片"
 
-#: src/ui/conversation.rs:4263
+#: src/ui/conversation.rs:4309
 msgid "Location"
 msgstr "位置"
 
-#: src/ui/conversation.rs:4289
+#: src/ui/conversation.rs:4335
 msgid "Live location ended"
 msgstr "实时位置已结束"
 
-#: src/ui/conversation.rs:4291 src/ui/conversation.rs:4481
+#: src/ui/conversation.rs:4337 src/ui/conversation.rs:4527
 msgid "Live location"
 msgstr "实时位置"
 
-#: src/ui/conversation.rs:4301
+#: src/ui/conversation.rs:4347
 #, rust-format
 msgid "Updated {time}"
 msgstr "更新于 {time}"
 
-#: src/ui/conversation.rs:4351
+#: src/ui/conversation.rs:4397
 msgid "Chat"
 msgstr "聊天"
 
-#: src/ui/conversation.rs:4365
+#: src/ui/conversation.rs:4411
 msgid "Add"
 msgstr "添加"
 
-#: src/ui/conversation.rs:4410
+#: src/ui/conversation.rs:4456
 #, rust-format
 msgid "{} sticker"
 msgid_plural "{} stickers"
 msgstr[0] "{} 个贴图"
 
-#: src/ui/conversation.rs:4423
+#: src/ui/conversation.rs:4469
 msgid "View stickers"
 msgstr "查看贴图"
 
-#: src/ui/conversation.rs:4489
+#: src/ui/conversation.rs:4535
 msgid "Open WhatsApp on your phone to follow it."
 msgstr "在手机上打开 WhatsApp 即可查看。"
 
-#: src/ui/conversation.rs:4507
+#: src/ui/conversation.rs:4553
 msgid "View once photo. For your privacy, it opens only on your phone."
 msgstr "一次性照片。为保护你的隐私，它只能在手机上打开。"
 
-#: src/ui/conversation.rs:4511
+#: src/ui/conversation.rs:4557
 msgid "View once video. For your privacy, it opens only on your phone."
 msgstr "一次性视频。为保护你的隐私，它只能在手机上打开。"
 
-#: src/ui/conversation.rs:4515
+#: src/ui/conversation.rs:4561
 msgid "View once voice message. For your privacy, it opens only on your phone."
 msgstr "一次性语音消息。为保护你的隐私，它只能在手机上打开。"
 
-#: src/ui/conversation.rs:4519
+#: src/ui/conversation.rs:4565
 msgid "View once audio. For your privacy, it opens only on your phone."
 msgstr "一次性音频。为保护你的隐私，它只能在手机上打开。"
 
-#: src/ui/conversation.rs:4523
+#: src/ui/conversation.rs:4569
 msgid "View once message. For your privacy, it opens only on your phone."
 msgstr "一次性消息。为保护你的隐私，它只能在手机上打开。"
 
-#: src/ui/conversation.rs:4525
+#: src/ui/conversation.rs:4571
 msgid "This message can only be seen on your phone."
 msgstr "此消息只能在手机上查看。"
 
-#: src/ui/conversation.rs:5366
+#: src/ui/conversation.rs:5412
 msgid "Open in a map"
 msgstr "在地图中打开"
 
-#: src/ui/conversation.rs:5925
+#: src/ui/conversation.rs:5971
 msgid "Pause"
 msgstr "暂停"
 
-#: src/ui/conversation.rs:5927 src/ui/settings.rs:1420
+#: src/ui/conversation.rs:5973 src/ui/settings.rs:1420
 msgid "Play"
 msgstr "播放"
 
-#: src/ui/conversation.rs:5950
+#: src/ui/conversation.rs:5996
 msgid "Unmute"
 msgstr "取消静音"
 
-#: src/ui/conversation.rs:5952
+#: src/ui/conversation.rs:5998
 msgid "Mute"
 msgstr "静音"
 
@@ -916,56 +916,56 @@ msgstr[0] "剩余 {}"
 msgid "No one yet"
 msgstr "还没有人"
 
-#: src/app.rs:1424
+#: src/app.rs:1460
 #, rust-format
 msgid "A label named “{name}” already exists."
 msgstr "已存在名为“{name}”的标签。"
 
-#: src/app.rs:1484
+#: src/app.rs:1520
 #, rust-format
 msgid "{name} (You)"
 msgstr "{name}（你）"
 
-#: src/app.rs:1485 src/app.rs:1504
+#: src/app.rs:1521 src/app.rs:1540
 msgid "You"
 msgstr "你"
 
-#: src/app.rs:2305
+#: src/app.rs:2341
 msgid "Could not use this image"
 msgstr "无法使用此图片"
 
-#: src/app.rs:2768
+#: src/app.rs:2804
 msgid "Not sent: ZapFast is not connected to WhatsApp."
 msgstr "未发送：ZapFast 未连接到 WhatsApp。"
 
-#: src/app.rs:2772
+#: src/app.rs:2808
 msgid ""
 "Not sent: the message you’re replying to isn’t available on this computer. "
 "Cancel the reply to send without a quote."
 msgstr "未发送：你要回复的消息不在这台电脑上。取消回复即可不带引用发送。"
 
-#: src/app.rs:4126
+#: src/app.rs:4181
 msgid "Added to favorites"
 msgstr "已添加到收藏"
 
-#: src/app.rs:4201
+#: src/app.rs:4256
 msgid "Sending the sticker pack…"
 msgstr "正在发送贴图包…"
 
-#: src/app.rs:4491 src/ui/labels.rs:237
+#: src/app.rs:4546 src/ui/labels.rs:237
 #, rust-format
 msgid "You have {limit} labels, the most ZapFast keeps."
 msgstr "你已有 {limit} 个标签，这是 ZapFast 的上限。"
 
-#: src/app.rs:5057
+#: src/app.rs:5112
 msgid "This video opens in your system player"
 msgstr "此视频将用系统播放器打开"
 
-#: src/app.rs:5577
+#: src/app.rs:5638
 msgid "Copied image"
 msgstr "已复制图片"
 
-#: src/app.rs:5580 src/app.rs:5585
+#: src/app.rs:5641 src/app.rs:5646
 msgid "Failed to copy image"
 msgstr "复制图片失败"
 

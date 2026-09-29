@@ -6,7 +6,7 @@ msgstr ""
 "Project-Id-Version: ZapFast\n"
 "Report-Msgid-Bugs-To: https://github.com/crmne/zapfast/issues/new?"
 "template=translation.yml\n"
-"POT-Creation-Date: 2026-09-29 13:12+0200\n"
+"POT-Creation-Date: 2026-09-29 13:23+0200\n"
 "PO-Revision-Date: 2026-09-22 00:00-0300\n"
 "Last-Translator: ZapFast contributors\n"
 "Language-Team: French\n"
@@ -40,122 +40,122 @@ msgstr "Groupes"
 msgid "Channels"
 msgstr "Chaînes"
 
-#: src/util.rs:209 src/util.rs:296
+#: src/util.rs:226 src/util.rs:313
 msgid "Yesterday"
 msgstr "Hier"
 
-#: src/util.rs:236
+#: src/util.rs:253
 #, rust-format
 msgid "Yesterday at {time}"
 msgstr "Hier à {time}"
 
-#: src/util.rs:237
+#: src/util.rs:254
 #, rust-format
 msgid "{weekday} at {time}"
 msgstr "{weekday} à {time}"
 
-#: src/util.rs:240
+#: src/util.rs:257
 #, rust-format
 msgid "{date} at {time}"
 msgstr "{date} à {time}"
 
-#: src/util.rs:266
+#: src/util.rs:283
 #, rust-format
 msgid "last seen today at {time}"
 msgstr "vu(e) aujourd'hui à {time}"
 
-#: src/util.rs:267
+#: src/util.rs:284
 #, rust-format
 msgid "last seen yesterday at {time}"
 msgstr "vu(e) hier à {time}"
 
-#: src/util.rs:275
+#: src/util.rs:292
 #, rust-format
 msgid "last seen {weekday} at {time}"
 msgstr "vu(e) {weekday} à {time}"
 
-#: src/util.rs:279
+#: src/util.rs:296
 #, rust-format
 msgid "last seen {date}"
 msgstr "vu(e) le {date}"
 
-#: src/util.rs:295
+#: src/util.rs:312
 msgid "Today"
 msgstr "Aujourd'hui"
 
-#: src/util.rs:331
+#: src/util.rs:348
 msgid "Monday"
 msgstr "Lundi"
 
-#: src/util.rs:332
+#: src/util.rs:349
 msgid "Tuesday"
 msgstr "Mardi"
 
-#: src/util.rs:333
+#: src/util.rs:350
 msgid "Wednesday"
 msgstr "Mercredi"
 
-#: src/util.rs:334
+#: src/util.rs:351
 msgid "Thursday"
 msgstr "Jeudi"
 
-#: src/util.rs:335
+#: src/util.rs:352
 msgid "Friday"
 msgstr "Vendredi"
 
-#: src/util.rs:336
+#: src/util.rs:353
 msgid "Saturday"
 msgstr "Samedi"
 
-#: src/util.rs:337
+#: src/util.rs:354
 msgid "Sunday"
 msgstr "Dimanche"
 
-#: src/util.rs:345
+#: src/util.rs:362
 msgid "January"
 msgstr "Janvier"
 
-#: src/util.rs:346
+#: src/util.rs:363
 msgid "February"
 msgstr "Février"
 
-#: src/util.rs:347
+#: src/util.rs:364
 msgid "March"
 msgstr "Mars"
 
-#: src/util.rs:348
+#: src/util.rs:365
 msgid "April"
 msgstr "Avril"
 
-#: src/util.rs:349
+#: src/util.rs:366
 msgid "May"
 msgstr "Mai"
 
-#: src/util.rs:350
+#: src/util.rs:367
 msgid "June"
 msgstr "Juin"
 
-#: src/util.rs:351
+#: src/util.rs:368
 msgid "July"
 msgstr "Juillet"
 
-#: src/util.rs:352
+#: src/util.rs:369
 msgid "August"
 msgstr "Août"
 
-#: src/util.rs:353
+#: src/util.rs:370
 msgid "September"
 msgstr "Septembre"
 
-#: src/util.rs:354
+#: src/util.rs:371
 msgid "October"
 msgstr "Octobre"
 
-#: src/util.rs:355
+#: src/util.rs:372
 msgid "November"
 msgstr "Novembre"
 
-#: src/util.rs:356
+#: src/util.rs:373
 msgid "December"
 msgstr "Décembre"
 
@@ -179,7 +179,7 @@ msgstr "Verrouillés"
 msgid "No favorites yet"
 msgstr "Pas encore de favoris"
 
-#: src/ui/chats.rs:857 src/app.rs:1503
+#: src/ui/chats.rs:857 src/app.rs:1539
 msgid "Message yourself"
 msgstr "Envoyez-vous un message"
 
@@ -187,7 +187,7 @@ msgstr "Envoyez-vous un message"
 msgid "Remove from favorites"
 msgstr "Retirer des favoris"
 
-#: src/ui/chats.rs:1097 src/ui/chats.rs:1464 src/ui/conversation.rs:3851
+#: src/ui/chats.rs:1097 src/ui/chats.rs:1464 src/ui/conversation.rs:3897
 #: src/ui/dialogs.rs:1013 src/ui/picker.rs:1582
 msgid "Add to favorites"
 msgstr "Ajouter aux favoris"
@@ -277,120 +277,120 @@ msgstr "Message vocal ({duration}) non envoyé"
 msgid "Discard voice message"
 msgstr "Supprimer le message vocal"
 
-#: src/ui/conversation.rs:1971 src/notify/badge_windows.rs:255
+#: src/ui/conversation.rs:1993 src/notify/badge_windows.rs:255
 #, rust-format
 msgid "{} unread message"
 msgid_plural "{} unread messages"
 msgstr[0] "{} message non lu"
 msgstr[1] "{} messages non lus"
 
-#: src/ui/conversation.rs:3220 src/ui/conversation.rs:3860
+#: src/ui/conversation.rs:3266 src/ui/conversation.rs:3906
 msgid "Open in system player"
 msgstr "Ouvrir dans le lecteur du système"
 
-#: src/ui/conversation.rs:3221 src/ui/conversation.rs:3929
+#: src/ui/conversation.rs:3267 src/ui/conversation.rs:3975
 #: src/ui/message_info.rs:17
 msgid "Message info"
 msgstr "Infos du message"
 
-#: src/ui/conversation.rs:3872 src/ui/image_preview.rs:61
+#: src/ui/conversation.rs:3918 src/ui/image_preview.rs:61
 #: src/ui/image_preview.rs:172
 msgid "Copy image"
 msgstr "Copier l'image"
 
-#: src/ui/conversation.rs:4263
+#: src/ui/conversation.rs:4309
 #, fuzzy
 msgid "Location"
 msgstr "Position en direct"
 
-#: src/ui/conversation.rs:4289
+#: src/ui/conversation.rs:4335
 msgid "Live location ended"
 msgstr "Position en direct terminée"
 
-#: src/ui/conversation.rs:4291 src/ui/conversation.rs:4481
+#: src/ui/conversation.rs:4337 src/ui/conversation.rs:4527
 msgid "Live location"
 msgstr "Position en direct"
 
-#: src/ui/conversation.rs:4301
+#: src/ui/conversation.rs:4347
 #, rust-format
 msgid "Updated {time}"
 msgstr "Mise à jour à {time}"
 
-#: src/ui/conversation.rs:4351
+#: src/ui/conversation.rs:4397
 #, fuzzy
 msgid "Chat"
 msgstr "Discussions"
 
-#: src/ui/conversation.rs:4365
+#: src/ui/conversation.rs:4411
 msgid "Add"
 msgstr ""
 
-#: src/ui/conversation.rs:4410
+#: src/ui/conversation.rs:4456
 #, rust-format
 msgid "{} sticker"
 msgid_plural "{} stickers"
 msgstr[0] "{} sticker"
 msgstr[1] "{} stickers"
 
-#: src/ui/conversation.rs:4423
+#: src/ui/conversation.rs:4469
 msgid "View stickers"
 msgstr "Voir les stickers"
 
-#: src/ui/conversation.rs:4489
+#: src/ui/conversation.rs:4535
 msgid "Open WhatsApp on your phone to follow it."
 msgstr "Ouvrez WhatsApp sur votre téléphone pour la suivre."
 
-#: src/ui/conversation.rs:4507
+#: src/ui/conversation.rs:4553
 msgid "View once photo. For your privacy, it opens only on your phone."
 msgstr ""
 "Photo à vue unique. Pour votre confidentialité, elle ne s'ouvre que sur "
 "votre téléphone."
 
-#: src/ui/conversation.rs:4511
+#: src/ui/conversation.rs:4557
 msgid "View once video. For your privacy, it opens only on your phone."
 msgstr ""
 "Vidéo à vue unique. Pour votre confidentialité, elle ne s'ouvre que sur "
 "votre téléphone."
 
-#: src/ui/conversation.rs:4515
+#: src/ui/conversation.rs:4561
 msgid "View once voice message. For your privacy, it opens only on your phone."
 msgstr ""
 "Message vocal à écoute unique. Pour votre confidentialité, il ne s'ouvre que "
 "sur votre téléphone."
 
-#: src/ui/conversation.rs:4519
+#: src/ui/conversation.rs:4565
 msgid "View once audio. For your privacy, it opens only on your phone."
 msgstr ""
 "Audio à écoute unique. Pour votre confidentialité, il ne s'ouvre que sur "
 "votre téléphone."
 
-#: src/ui/conversation.rs:4523
+#: src/ui/conversation.rs:4569
 msgid "View once message. For your privacy, it opens only on your phone."
 msgstr ""
 "Message à vue unique. Pour votre confidentialité, il ne s'ouvre que sur "
 "votre téléphone."
 
-#: src/ui/conversation.rs:4525
+#: src/ui/conversation.rs:4571
 msgid "This message can only be seen on your phone."
 msgstr "Ce message n'est visible que sur votre téléphone."
 
-#: src/ui/conversation.rs:5366
+#: src/ui/conversation.rs:5412
 msgid "Open in a map"
 msgstr "Ouvrir dans une carte"
 
-#: src/ui/conversation.rs:5925
+#: src/ui/conversation.rs:5971
 msgid "Pause"
 msgstr "Pause"
 
-#: src/ui/conversation.rs:5927 src/ui/settings.rs:1420
+#: src/ui/conversation.rs:5973 src/ui/settings.rs:1420
 msgid "Play"
 msgstr "Lire"
 
-#: src/ui/conversation.rs:5950
+#: src/ui/conversation.rs:5996
 msgid "Unmute"
 msgstr "Réactiver le son"
 
-#: src/ui/conversation.rs:5952
+#: src/ui/conversation.rs:5998
 msgid "Mute"
 msgstr "Couper le son"
 
@@ -957,29 +957,29 @@ msgstr[1] "{} restants"
 msgid "No one yet"
 msgstr "Personne pour l’instant"
 
-#: src/app.rs:1424
+#: src/app.rs:1460
 #, rust-format
 msgid "A label named “{name}” already exists."
 msgstr "Une étiquette nommée « {name} » existe déjà."
 
-#: src/app.rs:1484
+#: src/app.rs:1520
 #, rust-format
 msgid "{name} (You)"
 msgstr "{name} (Vous)"
 
-#: src/app.rs:1485 src/app.rs:1504
+#: src/app.rs:1521 src/app.rs:1540
 msgid "You"
 msgstr "Vous"
 
-#: src/app.rs:2305
+#: src/app.rs:2341
 msgid "Could not use this image"
 msgstr "Impossible d’utiliser cette image"
 
-#: src/app.rs:2768
+#: src/app.rs:2804
 msgid "Not sent: ZapFast is not connected to WhatsApp."
 msgstr "Non envoyé : ZapFast n’est pas connecté à WhatsApp."
 
-#: src/app.rs:2772
+#: src/app.rs:2808
 msgid ""
 "Not sent: the message you’re replying to isn’t available on this computer. "
 "Cancel the reply to send without a quote."
@@ -987,28 +987,28 @@ msgstr ""
 "Non envoyé : le message auquel vous répondez n’est pas disponible sur cet "
 "ordinateur. Annulez la réponse pour l’envoyer sans citation."
 
-#: src/app.rs:4126
+#: src/app.rs:4181
 msgid "Added to favorites"
 msgstr "Ajouté aux favoris"
 
-#: src/app.rs:4201
+#: src/app.rs:4256
 msgid "Sending the sticker pack…"
 msgstr "Envoi du pack de stickers…"
 
-#: src/app.rs:4491 src/ui/labels.rs:237
+#: src/app.rs:4546 src/ui/labels.rs:237
 #, rust-format
 msgid "You have {limit} labels, the most ZapFast keeps."
 msgstr "Vous avez {limit} étiquettes, le maximum que ZapFast conserve."
 
-#: src/app.rs:5057
+#: src/app.rs:5112
 msgid "This video opens in your system player"
 msgstr "Cette vidéo s'ouvre dans le lecteur du système"
 
-#: src/app.rs:5577
+#: src/app.rs:5638
 msgid "Copied image"
 msgstr "Image copiée"
 
-#: src/app.rs:5580 src/app.rs:5585
+#: src/app.rs:5641 src/app.rs:5646
 msgid "Failed to copy image"
 msgstr "Impossible de copier l'image"
 
