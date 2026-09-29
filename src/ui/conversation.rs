@@ -3841,6 +3841,12 @@ fn reactions(ui: &mut egui::Ui, view: &View<'_>, message: &Message, actions: &mu
         let size = line.size() + vec2(12.0, 6.0);
         let (rect, response) = ui.allocate_exact_size(size, Sense::click());
         if ui.is_rect_visible(rect) {
+            // Lifted as gently as a hovered chat-list row, so the pill
+            // stands off the bubble it overlaps.
+            let mut shadow = palette.bubble_shadow();
+            shadow.color = shadow.color.gamma_multiply(0.6);
+            ui.painter()
+                .add(shadow.as_shape(rect, CornerRadius::from(rect.height() / 2.0)));
             ui.painter()
                 .rect_filled(rect, rect.height() / 2.0, palette.overlay);
             ui.painter().rect_stroke(
