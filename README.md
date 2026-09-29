@@ -99,7 +99,11 @@ See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
   clock format or the time locale (`LC_TIME`) on Linux. **Select** in a
   message's menu, or Ctrl-click (Command-click on macOS) on a message, starts
   a selection: click more messages to add or remove them, Shift-click to add
-  everything up to the one you click, then **Forward…** sends them together,
+  everything up to the one you click, or drag across messages to add every
+  one you pass (the list scrolls when you hold the pointer at its top or
+  bottom edge). A drag that starts beside the bubbles, off the text, starts a
+  selection too; a drag over the text outside a selection still selects the
+  text to copy. Then **Forward…** sends them together,
   in their original order, or Escape cancels. A batch goes out one message at
   a time, each starting once the one before it reached WhatsApp, so a picture
   cannot overtake the text that came before it.

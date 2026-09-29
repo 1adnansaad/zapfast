@@ -294,6 +294,39 @@ pub struct Presence {
     pub last_seen: Option<i64>,
 }
 
+/// Messages swept by dragging over them (#246): everything from the row
+/// the drag began on to the row under the pointer joins what was selected
+/// before, by the chat's order, so rows the list skipped count too.
+#[derive(Clone, Debug, PartialEq)]
+pub(crate) struct Sweep {
+    pub chat: ChatId,
+    pub anchor: String,
+    /// The row under the pointer when the sweep last moved.
+    pub to: String,
+    base: Vec<String>,
+}
+
+/// Adds the messages from `anchor` to `to` to a selection, in either
+/// direction, keeping the chat's order. Deleted and placeholder messages
+/// cannot be forwarded, so they stay out.
+fn add_range(messages: &[Message], ids: &mut Vec<String>, anchor: &str, to: &str) {
+    let position = |id: &str| messages.iter().position(|message| message.id == id);
+    let (Some(from), Some(to)) = (position(anchor), position(to)) else {
+        return;
+    };
+    let (from, to) = (from.min(to), from.max(to));
+    for message in &messages[from..=to] {
+        if !matches!(
+            message.content,
+            Content::Revoked | Content::PhoneOnly { .. } | Content::Unsupported { .. }
+        ) && !ids.contains(&message.id)
+        {
+            ids.push(message.id.clone());
+        }
+    }
+    ids.sort_by_key(|id| position(id).unwrap_or(usize::MAX));
+}
+
 /// The "unread messages" divider of the open chat. It stays until another
 /// chat opens, like on the phone.
 #[derive(Clone, Debug, PartialEq)]
@@ -415,6 +448,8 @@ pub struct App {
     pub selection: Option<(ChatId, Vec<String>)>,
     /// The message a Shift-click range starts from.
     selection_anchor: Option<String>,
+    /// Messages being swept with the mouse held down, if any.
+    pub(crate) sweep: Option<Sweep>,
     avatars: HashMap<String, Option<PathBuf>>,
     avatar_requests: HashSet<String>,
     /// Full-size profile pictures for info dialogs.
@@ -919,6 +954,7 @@ impl App {
             unread_divider: None,
             selection: None,
             selection_anchor: None,
+            sweep: None,
             avatars: HashMap::new(),
             avatar_requests: HashSet::new(),
             avatars_full: HashMap::new(),
@@ -3813,31 +3849,47 @@ impl App {
                 let Some(conversation) = self.conversations.get(chat.as_str()) else {
                     return;
                 };
-                let position = |id: &str| {
-                    conversation
-                        .messages
-                        .iter()
-                        .position(|message| message.id == id)
-                };
                 let anchor = self.selection_anchor.clone().unwrap_or_else(|| id.clone());
-                if let (Some(from), Some(to)) = (position(&anchor), position(&id)) {
-                    let (from, to) = (from.min(to), from.max(to));
-                    for message in &conversation.messages[from..=to] {
-                        // Deleted and placeholder messages cannot be forwarded.
-                        if !matches!(
-                            message.content,
-                            Content::Revoked
-                                | Content::PhoneOnly { .. }
-                                | Content::Unsupported { .. }
-                        ) && !ids.contains(&message.id)
-                        {
-                            ids.push(message.id.clone());
-                        }
-                    }
-                    ids.sort_by_key(|id| position(id).unwrap_or(usize::MAX));
-                }
+                add_range(&conversation.messages, ids, &anchor, &id);
                 self.selection_anchor = Some(id);
             }
+            Action::SweepMessages { anchor, to } => {
+                let Some(chat) = self.open_chat.clone() else {
+                    return;
+                };
+                // A sweep adds to what was selected when it began, so
+                // dragging back leaves out the rows it passes again.
+                if self
+                    .sweep
+                    .as_ref()
+                    .is_none_or(|sweep| sweep.chat != chat || sweep.anchor != anchor)
+                {
+                    let base = self
+                        .selection
+                        .as_ref()
+                        .filter(|(selected, _)| *selected == chat)
+                        .map(|(_, ids)| ids.clone())
+                        .unwrap_or_default();
+                    self.sweep = Some(Sweep {
+                        chat: chat.clone(),
+                        anchor: anchor.clone(),
+                        to: to.clone(),
+                        base,
+                    });
+                }
+                let Some(sweep) = self.sweep.as_mut() else {
+                    return;
+                };
+                sweep.to.clone_from(&to);
+                let Some(conversation) = self.conversations.get(chat.as_str()) else {
+                    return;
+                };
+                let mut ids = sweep.base.clone();
+                add_range(&conversation.messages, &mut ids, &anchor, &to);
+                self.selection = (!ids.is_empty()).then_some((chat, ids));
+                self.selection_anchor = Some(to);
+            }
+            Action::EndSweep => self.sweep = None,
             Action::ToggleSelected(id) => {
                 self.selection_anchor = Some(id.clone());
                 if let Some((chat, ids)) = self.selection.as_mut() {
@@ -3862,7 +3914,10 @@ impl App {
                     }
                 }
             }
-            Action::CancelSelection => self.selection = None,
+            Action::CancelSelection => {
+                self.selection = None;
+                self.sweep = None;
+            }
             Action::Edit(id) => {
                 let text = self
                     .open_chat
@@ -7215,6 +7270,73 @@ mod tests {
         app.apply(Action::SelectMessage("second".into()), &ctx);
         app.apply(Action::ToggleSelected("second".into()), &ctx);
         assert!(app.selection.is_none());
+    }
+
+    /// #246: a sweep adds its range to what was selected when it began, in
+    /// the chat's order, and shrinks again when dragged back.
+    #[test]
+    fn a_sweep_adds_its_range_to_the_selection_it_began_from() {
+        let mut app = app();
+        let ctx = egui::Context::default();
+        let chat = "1@s.whatsapp.net";
+        app.chats = vec![Chat::new(chat.into(), "Ada".into())];
+        app.open_chat = Some(chat.into());
+        let mut gone = message(chat, "gone", 3);
+        gone.content = Content::Revoked;
+        app.conversations.entry(chat.into()).or_default().merge(
+            vec![
+                message(chat, "first", 1),
+                message(chat, "second", 2),
+                gone,
+                message(chat, "fourth", 4),
+                message(chat, "fifth", 5),
+            ],
+            false,
+        );
+        let selected = |app: &App| app.selection.as_ref().map(|(_, ids)| ids.clone());
+        let sweep = |app: &mut App, to: &str| {
+            app.apply(
+                Action::SweepMessages {
+                    anchor: "fifth".into(),
+                    to: to.into(),
+                },
+                &ctx,
+            );
+        };
+        // Outside a selection, a sweep starts one.
+        sweep(&mut app, "fifth");
+        assert_eq!(selected(&app), Some(vec!["fifth".into()]));
+        sweep(&mut app, "second");
+        assert_eq!(
+            selected(&app),
+            Some(vec!["second".into(), "fourth".into(), "fifth".into()]),
+            "what cannot be forwarded stays out"
+        );
+        sweep(&mut app, "fourth");
+        assert_eq!(selected(&app), Some(vec!["fourth".into(), "fifth".into()]));
+        app.apply(Action::EndSweep, &ctx);
+        assert!(app.sweep.is_none());
+        // A new sweep keeps what was selected before it.
+        app.apply(Action::ToggleSelected("first".into()), &ctx);
+        app.apply(
+            Action::SweepMessages {
+                anchor: "second".into(),
+                to: "second".into(),
+            },
+            &ctx,
+        );
+        assert_eq!(
+            selected(&app),
+            Some(vec![
+                "first".into(),
+                "second".into(),
+                "fourth".into(),
+                "fifth".into()
+            ])
+        );
+        // Escape ends both.
+        app.apply(Action::CancelSelection, &ctx);
+        assert!(app.selection.is_none() && app.sweep.is_none());
     }
 
     #[test]

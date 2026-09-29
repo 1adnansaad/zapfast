@@ -1395,6 +1395,14 @@ pub enum Action {
     ToggleSelected(String),
     /// Selects every message from the last one clicked to this one.
     SelectRange(String),
+    /// Selects the messages a mouse drag has swept, from the row it began on
+    /// to the row under the pointer, starting a selection if none was open.
+    SweepMessages {
+        anchor: String,
+        to: String,
+    },
+    /// The mouse button that swept messages was released.
+    EndSweep,
     /// Leaves selection mode.
     CancelSelection,
     /// Loads an outgoing message into the composer for editing.

@@ -5407,6 +5407,237 @@ mod tests {
         assert_eq!(app.open_chat, Some(chat), "and leaves the chat open");
     }
 
+    /// A chat of `count` short text messages, alternating sides from an
+    /// outgoing first one, opened and drawn at its end.
+    fn sweep_chat(count: u32) -> (App, egui::Context, String) {
+        let mut app = app();
+        let chat = sample_ids()[0].to_owned();
+        app.conversations.get_mut(&chat).unwrap().messages = (0..count)
+            .map(|i| {
+                message(
+                    &chat,
+                    &format!("m{i:03}"),
+                    i % 2 == 0,
+                    1_700_000_000 + i64::from(i),
+                    Content::text(format!("message number {i}")),
+                )
+            })
+            .collect();
+        let ctx = egui::Context::default();
+        app.attach(&ctx);
+        render(&mut app, &ctx);
+        render(&mut app, &ctx);
+        (app, ctx, chat)
+    }
+
+    fn drawn_rect(ctx: &egui::Context, chat: &str, message: &str, part: &str) -> egui::Rect {
+        let id = crate::ui::conversation::bubble_id(chat, message).with(part);
+        ctx.data(|data| data.get_temp::<egui::Rect>(id))
+            .unwrap_or_else(|| panic!("{message} is on screen"))
+    }
+
+    /// A point in the empty strip beside a message's bubble.
+    fn beside(ctx: &egui::Context, chat: &str, message: &str, from_me: bool) -> egui::Pos2 {
+        let rect = drawn_rect(ctx, chat, message, "rect");
+        let x = if from_me {
+            rect.left() - 100.0
+        } else {
+            rect.right() + 100.0
+        };
+        // Where the strip took input last, which a history still settling
+        // may have moved from the bubble's last rect.
+        let row = ctx
+            .read_response(crate::ui::conversation::bubble_id(chat, message).with("row"))
+            .map_or(rect, |row| row.rect);
+        egui::pos2(x, row.center().y)
+    }
+
+    fn selected_ids(app: &App) -> Vec<String> {
+        app.selection
+            .as_ref()
+            .map(|(_, ids)| ids.clone())
+            .unwrap_or_default()
+    }
+
+    fn text_selected(ctx: &egui::Context) -> bool {
+        ctx.plugin_opt::<egui::text_selection::LabelSelectionState>()
+            .is_some_and(|plugin| plugin.lock().has_selection())
+    }
+
+    /// #246: while selecting, a drag over messages sweeps them into the
+    /// selection, text included, and dragging back leaves rows out again.
+    #[test]
+    fn a_drag_while_selecting_sweeps_messages_over_their_text() {
+        let (mut app, ctx, chat) = sweep_chat(8);
+        app.actions
+            .push(crate::model::Action::SelectMessage("m001".into()));
+        render(&mut app, &ctx);
+        let body = |id: &str| drawn_rect(&ctx, &chat, id, "body").center();
+        let (from, via, to) = (body("m003"), body("m004"), body("m005"));
+        frame_with(
+            &mut app,
+            &ctx,
+            vec![egui::Event::PointerMoved(from), primary(from, true)],
+        );
+        for pos in [via, to, to] {
+            frame_with(&mut app, &ctx, vec![egui::Event::PointerMoved(pos)]);
+        }
+        assert_eq!(
+            selected_ids(&app),
+            ["m001", "m003", "m004", "m005"],
+            "the sweep adds every row from the press to the pointer"
+        );
+        assert!(!text_selected(&ctx), "the drag swept messages, not text");
+        // Back over the row it began on: the rows passed again drop out.
+        for _ in 0..2 {
+            frame_with(&mut app, &ctx, vec![egui::Event::PointerMoved(from)]);
+        }
+        assert_eq!(selected_ids(&app), ["m001", "m003"]);
+        frame_with(&mut app, &ctx, vec![egui::Event::PointerMoved(via)]);
+        frame_with(&mut app, &ctx, vec![primary(via, false)]);
+        render(&mut app, &ctx);
+        assert_eq!(selected_ids(&app), ["m001", "m003", "m004"]);
+        assert!(app.sweep.is_none(), "releasing ends the sweep");
+        // Moving without the button does not sweep further.
+        frame_with(&mut app, &ctx, vec![egui::Event::PointerMoved(to)]);
+        render(&mut app, &ctx);
+        assert_eq!(selected_ids(&app), ["m001", "m003", "m004"]);
+        // A click still toggles, and Shift-click still takes a range.
+        let click = |app: &mut App, pos: egui::Pos2, modifiers: egui::Modifiers| {
+            let button = |pressed| egui::Event::PointerButton {
+                pos,
+                button: egui::PointerButton::Primary,
+                pressed,
+                modifiers,
+            };
+            frame_with(
+                app,
+                &ctx,
+                vec![
+                    egui::Event::ModifiersChanged(modifiers),
+                    egui::Event::PointerMoved(pos),
+                    button(true),
+                ],
+            );
+            frame_with(app, &ctx, vec![button(false)]);
+            frame_with(
+                app,
+                &ctx,
+                vec![egui::Event::ModifiersChanged(egui::Modifiers::NONE)],
+            );
+            render(app, &ctx);
+        };
+        click(&mut app, body("m003"), egui::Modifiers::NONE);
+        assert_eq!(selected_ids(&app), ["m001", "m004"]);
+        click(&mut app, body("m006"), egui::Modifiers::SHIFT);
+        // From the message clicked last, as before.
+        assert_eq!(selected_ids(&app), ["m001", "m003", "m004", "m005", "m006"]);
+    }
+
+    /// #246: outside selection mode, a drag that starts beside the bubbles,
+    /// off the text, starts selecting and sweeps the messages it passes. A
+    /// drag over the text still selects the text.
+    #[test]
+    fn a_drag_beside_the_bubbles_starts_selecting_messages() {
+        let (mut app, ctx, chat) = sweep_chat(8);
+        // Over the text, a drag selects text as before.
+        let text = drawn_rect(&ctx, &chat, "m002", "body");
+        let (start, end) = (
+            egui::pos2(text.left() + 2.0, text.center().y),
+            text.center(),
+        );
+        frame_with(
+            &mut app,
+            &ctx,
+            vec![egui::Event::PointerMoved(start), primary(start, true)],
+        );
+        frame_with(&mut app, &ctx, vec![egui::Event::PointerMoved(end)]);
+        frame_with(&mut app, &ctx, vec![egui::Event::PointerMoved(end)]);
+        frame_with(&mut app, &ctx, vec![primary(end, false)]);
+        assert!(text_selected(&ctx), "the drag over the text selects text");
+        assert!(app.selection.is_none(), "and no messages");
+        render(&mut app, &ctx);
+        // Beside the bubbles, it sweeps messages instead.
+        let from = beside(&ctx, &chat, "m003", false);
+        let to = beside(&ctx, &chat, "m005", false);
+        let via = beside(&ctx, &chat, "m004", true);
+        frame_with(
+            &mut app,
+            &ctx,
+            vec![egui::Event::PointerMoved(from), primary(from, true)],
+        );
+        for pos in [via, to, to] {
+            frame_with(&mut app, &ctx, vec![egui::Event::PointerMoved(pos)]);
+        }
+        frame_with(&mut app, &ctx, vec![primary(to, false)]);
+        render(&mut app, &ctx);
+        assert_eq!(selected_ids(&app), ["m003", "m004", "m005"]);
+        assert!(app.sweep.is_none());
+        // A click beside a bubble in selection mode still toggles it.
+        let pos = beside(&ctx, &chat, "m004", true);
+        frame_with(
+            &mut app,
+            &ctx,
+            vec![egui::Event::PointerMoved(pos), primary(pos, true)],
+        );
+        frame_with(&mut app, &ctx, vec![primary(pos, false)]);
+        render(&mut app, &ctx);
+        assert_eq!(selected_ids(&app), ["m003", "m005"]);
+    }
+
+    /// #246: a sweep held at the top edge scrolls the list, and takes every
+    /// message it passes, rows the list only estimated included.
+    #[test]
+    fn a_sweep_held_at_the_top_edge_scrolls_and_selects_what_it_passes() {
+        let (mut app, ctx, chat) = sweep_chat(400);
+        // Let the rows measured for the first time settle.
+        let mut last = None;
+        for _ in 0..20 {
+            render(&mut app, &ctx);
+            let rect = drawn_rect(&ctx, &chat, "m398", "rect");
+            if last == Some(rect) {
+                break;
+            }
+            last = Some(rect);
+        }
+        let view = app
+            .selection_view
+            .lock()
+            .expect("the view rect")
+            .expect("the conversation was drawn");
+        let on_screen = (0..400)
+            .filter(|i| {
+                let id = crate::ui::conversation::bubble_id(&chat, &format!("m{i:03}"));
+                ctx.data(|data| data.get_temp::<egui::Rect>(id.with("rect")))
+                    .is_some_and(|rect| view.intersects(rect))
+            })
+            .count();
+        let from = beside(&ctx, &chat, "m398", true);
+        let hold = egui::pos2(from.x, view.top() + 4.0);
+        frame_with(
+            &mut app,
+            &ctx,
+            vec![egui::Event::PointerMoved(from), primary(from, true)],
+        );
+        for _ in 0..120 {
+            frame_with(&mut app, &ctx, vec![egui::Event::PointerMoved(hold)]);
+        }
+        frame_with(&mut app, &ctx, vec![primary(hold, false)]);
+        render(&mut app, &ctx);
+        let ids = selected_ids(&app);
+        assert_eq!(ids.last().map(String::as_str), Some("m398"), "{ids:?}");
+        assert!(
+            ids.len() > on_screen + 5,
+            "the sweep scrolled past the first screen: {} of {on_screen}",
+            ids.len()
+        );
+        // Every message between its ends, in order, with none left out.
+        let first: usize = ids[0][1..].parse().expect("a numbered id");
+        let expected: Vec<String> = (first..=398).map(|i| format!("m{i:03}")).collect();
+        assert_eq!(ids, expected);
+        assert!(!app.scroll_to_bottom, "heading up releases the pin");
+    }
+
     /// #241: while selecting, a click on a message's text or beside its
     /// bubble adds it, not only a click on the bubble's padding.
     #[test]

@@ -1751,6 +1751,22 @@ fn messages(app: &mut App, ui: &mut egui::Ui, chat: &Chat) {
         .as_ref()
         .filter(|(selected_chat, _)| *selected_chat == chat.id)
         .map(|(_, ids)| ids.clone());
+    // A sweep over messages (#246) follows the pointer while the button is
+    // held, whichever row took the press, and ends on release.
+    let sweep = app
+        .sweep
+        .as_ref()
+        .filter(|sweep| sweep.chat == chat.id)
+        .map(|sweep| (sweep.anchor.clone(), sweep.to.clone()));
+    if app.sweep.is_some() && (sweep.is_none() || !ui.input(|input| input.pointer.primary_down())) {
+        actions.push(Action::EndSweep);
+    }
+    let sweep = sweep.filter(|_| ui.input(|input| input.pointer.primary_down()));
+    let sweep_pointer = ui.input(|input| input.pointer.latest_pos());
+    // The row under the pointer: the last laid-out row whose top it is
+    // below, or the first one when it is above them all.
+    let mut swept_to: Option<&str> = None;
+    let mut first_row: Option<&str> = None;
     let scroll_to_bottom =
         app.scroll_to_bottom && divider.as_ref().is_none_or(|(.., placed)| *placed);
     // The message a quote or search result jumped to flashes once in view.
@@ -1951,6 +1967,12 @@ fn messages(app: &mut App, ui: &mut egui::Ui, chat: &Chat) {
                             let id = bubble_id(&chat.id, &message.id).with("rect");
                             ui.ctx().data_mut(|data| data.remove::<Rect>(id));
                         }
+                        if sweep.is_some() {
+                            first_row.get_or_insert(message.id.as_str());
+                            if sweep_pointer.is_some_and(|pointer| pointer.y >= before) {
+                                swept_to = Some(message.id.as_str());
+                            }
+                        }
                         if new_day {
                             ui.add_space(8.0);
                             ui.vertical_centered(|ui| {
@@ -2045,7 +2067,8 @@ fn messages(app: &mut App, ui: &mut egui::Ui, chat: &Chat) {
                             // the message: its text, links and media, and the
                             // strip beside it, not only the bubble's padding
                             // (#241). Registered after the row, so it takes
-                            // those clicks; a drag still selects text.
+                            // those clicks, and drags, which sweep messages
+                            // rather than text (#246).
                             let row = Rect::from_x_y_ranges(
                                 ui.max_rect().x_range(),
                                 response.rect.y_range(),
@@ -2053,8 +2076,14 @@ fn messages(app: &mut App, ui: &mut egui::Ui, chat: &Chat) {
                             let pick = ui.interact(
                                 row,
                                 bubble_id(&chat.id, &message.id).with("pick"),
-                                Sense::CLICK,
+                                Sense::click_and_drag(),
                             );
+                            if pick.drag_started() {
+                                actions.push(Action::SweepMessages {
+                                    anchor: message.id.clone(),
+                                    to: message.id.clone(),
+                                });
+                            }
                             if response.clicked() || pick.clicked() {
                                 let shift = ui.input(|input| input.modifiers.shift);
                                 actions.push(if shift {
@@ -2088,6 +2117,15 @@ fn messages(app: &mut App, ui: &mut egui::Ui, chat: &Chat) {
                             },
                         );
                         previous = Some(message);
+                    }
+                    if let Some((anchor, to)) = &sweep
+                        && let Some(row) = swept_to.or(first_row)
+                        && row != to
+                    {
+                        actions.push(Action::SweepMessages {
+                            anchor: anchor.clone(),
+                            to: row.to_owned(),
+                        });
                     }
                     if !typing.is_empty() {
                         typing_bubble(ui, &view, &typing);
@@ -2650,14 +2688,22 @@ fn bubble(
         })
     .max(0.0);
     // Register the empty strip beside the bubble from its previous rect, before
-    // the row, so the avatar, the bubble, and the reactions win clicks.
+    // the row, so the avatar, the bubble, and the reactions win clicks, and the
+    // text wins drags. A drag that starts here, off the text, sweeps messages
+    // into a selection (#246).
     let id = bubble_id(&view.chat.id, &message.id);
     let previous = ui.ctx().data(|data| data.get_temp::<Rect>(id.with("rect")));
     if let Some(rect) = previous {
         let strip = Rect::from_x_y_ranges(ui.max_rect().x_range(), rect.y_range());
-        let strip = ui.interact(strip, id.with("row"), Sense::CLICK);
+        let strip = ui.interact(strip, id.with("row"), Sense::click_and_drag());
         if strip.clicked() {
             actions.push(Action::FocusComposer);
+        }
+        if strip.drag_started() {
+            actions.push(Action::SweepMessages {
+                anchor: message.id.clone(),
+                to: message.id.clone(),
+            });
         }
         reply_on_double_click(&strip, message, actions);
     }
