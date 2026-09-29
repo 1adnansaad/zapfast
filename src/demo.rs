@@ -9518,29 +9518,36 @@ mod tests {
     }
 
     /// The chat list's header and the conversation's start their first row
-    /// at the same height and make it as tall, so the titles line up.
+    /// at the same height and make it as tall, so the titles line up, in the
+    /// macOS layout (no title bar, traffic lights on the row) as elsewhere.
     #[test]
     fn both_headers_share_their_first_row() {
-        let mut app = app();
-        let ctx = egui::Context::default();
-        app.attach(&ctx);
-        for _ in 0..3 {
-            frame_sized(&mut app, &ctx, 780.0, Vec::new());
+        for macos in [false, true] {
+            let mut app = app();
+            let ctx = egui::Context::default();
+            app.attach(&ctx);
+            if macos {
+                crate::theme::preview_macos(&ctx);
+            }
+            for _ in 0..3 {
+                frame_sized(&mut app, &ctx, 780.0, Vec::new());
+            }
+            let (list, chat) = ctx.data(|data| {
+                (
+                    data.get_temp::<egui::Rect>(crate::ui::chats::header_row_id()),
+                    data.get_temp::<egui::Rect>(crate::ui::conversation::header_row_id()),
+                )
+            });
+            let (list, chat) = (
+                list.expect("the chat list"),
+                chat.expect("the conversation"),
+            );
+            assert!(
+                (list.top() - chat.top()).abs() < 0.5
+                    && (list.height() - chat.height()).abs() < 0.5,
+                "macOS {macos}: chat list row {list:?}, conversation row {chat:?}"
+            );
         }
-        let (list, chat) = ctx.data(|data| {
-            (
-                data.get_temp::<egui::Rect>(crate::ui::chats::header_row_id()),
-                data.get_temp::<egui::Rect>(crate::ui::conversation::header_row_id()),
-            )
-        });
-        let (list, chat) = (
-            list.expect("the chat list"),
-            chat.expect("the conversation"),
-        );
-        assert!(
-            (list.top() - chat.top()).abs() < 0.5 && (list.height() - chat.height()).abs() < 0.5,
-            "chat list row {list:?}, conversation row {chat:?}"
-        );
     }
 
     /// The text starts right after the plus and emoji pair, as close to the

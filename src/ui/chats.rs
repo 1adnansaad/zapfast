@@ -278,8 +278,8 @@ fn macos_header(app: &mut App, ui: &mut egui::Ui) {
     Frame::new()
         .inner_margin(Margin::symmetric(14, 8))
         .show(ui, |ui| {
-            ui.horizontal(|ui| {
-                ui.set_min_height(44.0);
+            let row = ui.horizontal(|ui| {
+                ui.set_min_height(super::conversation::HEADER_ROW);
                 ui.add_space((inset - 14.0).max(0.0));
                 if app.show_archived || app.locked_folder {
                     if theme::icon_button(
@@ -345,6 +345,8 @@ fn macos_header(app: &mut App, ui: &mut egui::Ui) {
                     }
                 });
             });
+            ui.ctx()
+                .data_mut(|data| data.insert_temp(header_row_id(), row.response.rect));
             ui.add_space(6.0);
             let mut text = app.search.clone();
             let response = widgets::search_field(
