@@ -7290,7 +7290,16 @@ fn pending_strip(app: &mut App, ui: &mut egui::Ui) {
         for (index, item) in app.pending.iter_mut().enumerate() {
             let (rect, response) = ui.allocate_exact_size(Vec2::splat(tile), Sense::hover());
             if ui.is_rect_visible(rect) {
-                ui.painter().rect_filled(rect, 8.0, palette.surface);
+                // Lifted off the chat like a bubble, with a bubble's corners.
+                let radius = CornerRadius::same(widgets::BUBBLE_RADIUS);
+                ui.painter()
+                    .add(palette.bubble_shadow().as_shape(rect, radius));
+                ui.painter().rect_filled(
+                    rect.translate(vec2(0.0, -theme::RAISED_EDGE)),
+                    radius,
+                    palette.raised_edge(palette.surface),
+                );
+                ui.painter().rect_filled(rect, radius, palette.surface);
                 match item {
                     crate::app::Pending::Picture {
                         width,
