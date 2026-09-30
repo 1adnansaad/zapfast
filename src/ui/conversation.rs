@@ -6068,7 +6068,20 @@ fn video(
                 if status.state == State::Paused
                     || (status.state == State::Playing && ui.rect_contains_pointer(rect))
                 {
-                    video_controls(ui, view, message, path, rect, status, actions);
+                    video_controls(
+                        ui,
+                        &VideoControls {
+                            player: view.video,
+                            locale: view.locale,
+                            accent: view.palette.accent,
+                            expanded: false,
+                        },
+                        &message.id,
+                        path,
+                        rect,
+                        status,
+                        actions,
+                    );
                 }
             }
             _ => {
@@ -6115,11 +6128,20 @@ fn video(
             message: message.id.clone(),
         });
     }
-    if response
-        .on_hover_cursor(egui::CursorIcon::PointingHand)
-        .clicked()
-    {
+    let response = response.on_hover_cursor(egui::CursorIcon::PointingHand);
+    if response.clicked() {
         video_clicked(view, message, media, gif, auto, actions);
+    }
+    // The two clicks of a double-click play and pause between them; the
+    // video then opens over the window as it was.
+    if response.double_clicked()
+        && !gif
+        && let Some(path) = &media.path
+    {
+        actions.push(Action::ExpandVideo {
+            message: message.id.clone(),
+            path: path.clone(),
+        });
     }
     size.x
 }
@@ -6157,12 +6179,22 @@ fn video_clicked(
     }
 }
 
-/// Play/pause, the time, a seek bar, and a sound switch along the bottom of
-/// a playing video.
-fn video_controls(
+/// What the video controls need besides the video: the bubble and the view
+/// covering the window share them.
+pub(crate) struct VideoControls<'a> {
+    pub player: &'a crate::video::Player,
+    pub locale: crate::i18n::Locale,
+    pub accent: Color32,
+    /// Whether the video covers the window; its button then puts it back.
+    pub expanded: bool,
+}
+
+/// Play/pause, the time, a seek bar, a sound switch, and the switch between
+/// the message and the whole window, along the bottom of a playing video.
+pub(crate) fn video_controls(
     ui: &mut egui::Ui,
-    view: &View<'_>,
-    message: &Message,
+    controls: &VideoControls<'_>,
+    message: &str,
     path: &Path,
     rect: Rect,
     status: &crate::video::Status,
@@ -6179,7 +6211,7 @@ fn video_controls(
         },
         Color32::from_black_alpha(150),
     );
-    let id = ui.id().with(("video-controls", &message.id));
+    let id = ui.id().with(("video-controls", message));
     let toggle = Rect::from_center_size(pos2(bar.left() + 18.0, bar.center().y), Vec2::splat(26.0));
     let playing = status.state == crate::video::State::Playing;
     theme::paint_icon(
@@ -6190,9 +6222,9 @@ fn video_controls(
         Color32::WHITE,
     );
     let tooltip = if playing {
-        crate::i18n::gettext(view.locale, "Pause")
+        crate::i18n::gettext(controls.locale, "Pause")
     } else {
-        crate::i18n::gettext(view.locale, "Play")
+        crate::i18n::gettext(controls.locale, "Play")
     };
     if ui
         .interact(toggle, id.with("toggle"), Sense::click())
@@ -6201,12 +6233,48 @@ fn video_controls(
         .clicked()
     {
         actions.push(Action::PlayVideo {
-            message: message.id.clone(),
+            message: message.to_owned(),
             path: path.to_owned(),
         });
     }
-    let sound = Rect::from_center_size(pos2(bar.right() - 18.0, bar.center().y), Vec2::splat(26.0));
-    let muted = view.video.muted();
+    let window =
+        Rect::from_center_size(pos2(bar.right() - 18.0, bar.center().y), Vec2::splat(26.0));
+    theme::paint_icon(
+        ui,
+        if controls.expanded {
+            Icon::Minimize
+        } else {
+            Icon::Maximize
+        },
+        window,
+        16.0,
+        Color32::WHITE,
+    );
+    let tooltip = if controls.expanded {
+        crate::i18n::gettext(controls.locale, "Back to the message (Esc)")
+    } else {
+        crate::i18n::gettext(controls.locale, "Fill the window")
+    };
+    if ui
+        .interact(window, id.with("window"), Sense::click())
+        .on_hover_cursor(egui::CursorIcon::PointingHand)
+        .on_hover_text(tooltip.as_ref())
+        .clicked()
+    {
+        actions.push(if controls.expanded {
+            Action::CollapseVideo
+        } else {
+            Action::ExpandVideo {
+                message: message.to_owned(),
+                path: path.to_owned(),
+            }
+        });
+    }
+    let sound = Rect::from_center_size(
+        pos2(window.left() - 15.0, bar.center().y),
+        Vec2::splat(26.0),
+    );
+    let muted = controls.player.muted();
     theme::paint_icon(
         ui,
         if muted { Icon::VolumeX } else { Icon::Volume2 },
@@ -6215,9 +6283,9 @@ fn video_controls(
         Color32::WHITE,
     );
     let tooltip = if muted {
-        crate::i18n::gettext(view.locale, "Unmute")
+        crate::i18n::gettext(controls.locale, "Unmute")
     } else {
-        crate::i18n::gettext(view.locale, "Mute")
+        crate::i18n::gettext(controls.locale, "Mute")
     };
     if ui
         .interact(sound, id.with("sound"), Sense::click())
@@ -6264,14 +6332,14 @@ fn video_controls(
     ui.painter().rect_filled(
         Rect::from_min_max(line.min, pos2(played.x, line.bottom())),
         1.5,
-        view.palette.accent,
+        controls.accent,
     );
-    ui.painter().circle_filled(played, 5.0, view.palette.accent);
+    ui.painter().circle_filled(played, 5.0, controls.accent);
     if (response.clicked() || response.drag_stopped())
         && let Some(fraction) = pointed
     {
         actions.push(Action::SeekVideo {
-            message: message.id.clone(),
+            message: message.to_owned(),
             fraction,
         });
     }

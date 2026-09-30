@@ -257,7 +257,11 @@ See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
   Ctrl+C (Cmd+C on macOS); a downloaded image's message menu has **Copy image**
   too, without opening the preview. Click a video to play it in its message, with
   sound, a seek bar, and a mute switch; round video messages play inside their
-  circle with a progress ring, like on the phone. A video that is not
+  circle with a progress ring, like on the phone. Double-click a video, or use
+  the button at the end of its controls, to play it over the whole window at a
+  higher resolution: there Space plays and pauses, the left and right arrows
+  jump five seconds, M mutes, and Escape, the close button, or a click beside
+  the picture puts it back in its message. A video that is not
   downloaded yet downloads first and then plays. Videos in codecs other than
   H.264, such as HEVC, open in your system player, and so does **Open in system
   player** in a video's right-click menu. Unsupported pictures and documents
@@ -905,7 +909,8 @@ and its attachment and poll menu. `typing`, `mention`, and
 Use `--demo-page chat-menu` to preview the compact chat context menu,
 `--demo-page chat-header-menu` for the menu at the top of an open chat, and
 `--demo-page chat,voice,voice-menu` for a voice message's menu with its speeds.
-`--demo-page video` shows a video and round video messages, and
+`--demo-page video` shows a video and round video messages,
+`--demo-page video-expanded` the video over the whole window, and
 `video-playing` or `note-playing` starts one of them, silently.
 For deterministic theme screenshots, `--demo-page settings,omarchy` and
 `--demo-page settings,omarchy-light` preview following dark and light Omarchy

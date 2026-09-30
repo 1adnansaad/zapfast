@@ -1729,6 +1729,13 @@ pub fn apply_flags(app: &mut App, page: Option<&str>) {
             }
             "video" => video_sample(app, None),
             "video-playing" => video_sample(app, Some("demo-video")),
+            "video-expanded" => {
+                video_sample(app, None);
+                app.actions.push(crate::model::Action::ExpandVideo {
+                    message: "demo-video".into(),
+                    path: app.dirs.media_cache_dir().join("demo-video.mp4"),
+                });
+            }
             "shared-contact" => {
                 let chat = SAMPLES[0].id;
                 let now = crate::util::now();
@@ -4138,6 +4145,7 @@ mod tests {
             "message-info-direct",
             "video",
             "video-playing",
+            "video-expanded",
             "shared-contact",
             "note-playing",
             "empty",

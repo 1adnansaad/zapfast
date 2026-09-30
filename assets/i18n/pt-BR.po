@@ -1504,3 +1504,11 @@ msgstr ""
 #: src/settings.rs:319
 msgid "After 1 hour"
 msgstr ""
+
+#: src/ui/conversation.rs
+msgid "Fill the window"
+msgstr "Preencher a janela"
+
+#: src/ui/conversation.rs
+msgid "Back to the message (Esc)"
+msgstr "Voltar à mensagem (Esc)"

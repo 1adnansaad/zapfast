@@ -517,6 +517,8 @@ pub struct App {
     pauses_media: bool,
     /// Image currently shown in the native preview.
     pub image_preview: Option<PreviewState>,
+    /// Whether the loaded video covers the window instead of its bubble.
+    pub video_expanded: bool,
     /// Voice messages with a sent played receipt.
     played_told: HashSet<String>,
     /// Message bodies registered for transcript copy formatting.
@@ -1009,6 +1011,7 @@ impl App {
             media_hold: None,
             pauses_media: false,
             image_preview: None,
+            video_expanded: false,
             played_told: HashSet::new(),
             copy_rows: Default::default(),
             selection_view: Default::default(),
@@ -4099,6 +4102,21 @@ impl App {
             }
             Action::SeekVideo { message, fraction } => self.video.seek(&message, fraction),
             Action::ToggleVideoSound => self.video.toggle_mute(),
+            Action::ExpandVideo { message, path } => {
+                if self.video.message() != Some(message.as_str()) {
+                    self.video.set_expanded(true);
+                    self.play_video(message, path);
+                }
+                if self.video.message().is_some() {
+                    self.video.set_expanded(true);
+                    self.video.resume();
+                    self.video_expanded = true;
+                }
+            }
+            Action::CollapseVideo => {
+                self.video_expanded = false;
+                self.video.set_expanded(false);
+            }
             Action::SeekVoice {
                 message,
                 path,
@@ -5403,6 +5421,10 @@ impl App {
     fn tick_video(&mut self, ctx: &egui::Context) {
         if self.video.message().is_some() && self.video_chat != self.open_chat {
             self.video.stop();
+        }
+        if self.video_expanded && self.video.message().is_none() {
+            self.video_expanded = false;
+            self.video.set_expanded(false);
         }
         if let Some(crate::video::Notice::Unsupported(path)) = self.video.poll(ctx) {
             self.toast(crate::i18n::gettext(
@@ -8629,6 +8651,56 @@ mod tests {
         app.open_chat = None;
         app.tick_video(&ctx);
         assert!(app.video.message().is_none());
+    }
+
+    /// A video opens over the window at a size worth the room, goes back to
+    /// its message at the bubble's, and does not outlive the chat.
+    #[test]
+    fn a_video_covers_the_window_and_goes_back_to_its_message() {
+        let mut app = app();
+        app.video.silence();
+        let chat = "fixture@s.whatsapp.net";
+        app.open_chat = Some(chat.into());
+        let ctx = egui::Context::default();
+        let path = PathBuf::from(concat!(
+            env!("CARGO_MANIFEST_DIR"),
+            "/tests/fixtures/video/sample.mp4"
+        ));
+        let bubble = app.video.side();
+        let expand = || Action::ExpandVideo {
+            message: "clip".into(),
+            path: path.clone(),
+        };
+
+        // Not loaded yet: it starts, already at the larger size.
+        app.apply(expand(), &ctx);
+        assert_eq!(app.video.message(), Some("clip"));
+        assert!(app.video_expanded && app.video.is_active());
+        assert!(app.video.side() > bubble);
+
+        app.apply(Action::CollapseVideo, &ctx);
+        assert!(!app.video_expanded);
+        assert_eq!(app.video.side(), bubble);
+        assert_eq!(app.video.message(), Some("clip"), "it stays loaded");
+
+        // Paused in its bubble, expanding it plays it.
+        app.apply(
+            Action::PlayVideo {
+                message: "clip".into(),
+                path: path.clone(),
+            },
+            &ctx,
+        );
+        assert!(!app.video.is_active());
+        app.apply(expand(), &ctx);
+        assert!(app.video_expanded && app.video.is_active());
+
+        // Leaving the chat stops the video and takes the view down with it.
+        app.open_chat = None;
+        app.tick_video(&ctx);
+        assert!(app.video.message().is_none());
+        assert!(!app.video_expanded);
+        assert_eq!(app.video.side(), bubble);
     }
 
     #[test]
