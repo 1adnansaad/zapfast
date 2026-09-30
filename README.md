@@ -165,8 +165,8 @@ See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
   seconds. Error messages stay above the composer until you dismiss them, and
   a button copies their text for a bug report. A repeated error replaces its
   earlier copy, and only the three newest are kept.
-- **Send attachments with captions.** Paste a picture, drop files, or choose
-  **Send files** from the plus menu. They stay in the composer until you send them or press Escape.
+- **Send attachments with captions.** Paste a picture or copied files, drop
+  files (not yet on Wayland), or choose **Send files** from the plus menu. They stay in the composer until you send them or press Escape.
   Pasting a picture uses its image data without adding the source URL or HTML
   to your caption. Files copied in Finder, Explorer, or a Linux file manager
   paste as the files themselves, not their icons. Text-only clipboard contents
