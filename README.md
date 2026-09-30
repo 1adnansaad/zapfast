@@ -472,6 +472,7 @@ Builds for every release are on the
 | Platform | File |
 | --- | --- |
 | Linux x86_64 and arm64 | `zapfast-vX.Y.Z-<target>.tar.gz`, with the desktop file and icon in `packaging/` |
+| Linux x86_64 and arm64, one file | `zapfast-X.Y.Z-x86_64.AppImage` or `-aarch64.AppImage`: make it executable and run it |
 | Windows x64 and arm64 | `zapfast-vX.Y.Z-<target>-setup.exe` (no administrator rights needed), or the `.zip` |
 | macOS, universal | `zapfast-vX.Y.Z-macos-universal.dmg` |
 
@@ -839,7 +840,7 @@ See [update signing](packaging/UPDATE_SIGNING.md) for key custody and recovery.
 The in-app updater supports marked portable downloads, the Windows installer,
 and the macOS app in Applications. Keep `zapfast-portable.txt` beside a portable
 executable. AUR, DEB, RPM, Flatpak, Cargo and Homebrew installations use their
-package manager. Older portable downloads without the marker need one manual
+package manager, and an AppImage is replaced by downloading the new one. Older portable downloads without the marker need one manual
 upgrade. No account or additional service is needed.
 
 ## Developing
