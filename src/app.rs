@@ -1332,6 +1332,7 @@ impl App {
         // Colour emoji in labels, menus, tooltips and text fields; message
         // bodies paint their own over placeholders, which it leaves alone.
         ctx.add_plugin(crate::emoji::plugin());
+        crate::theme::set_font(ctx, self.settings.font);
         crate::theme::install(ctx);
         // Use a faster wheel speed for short chat rows.
         ctx.options_mut(|options| options.input_options.line_scroll_speed = 120.0);
@@ -4842,6 +4843,12 @@ impl App {
                 self.settings.custom_theme_cache = None;
                 self.mark_settings_dirty();
                 self.apply_theme(ctx);
+            }
+            Action::SetFont(choice) => {
+                self.settings.font = choice;
+                self.mark_settings_dirty();
+                crate::theme::set_font(ctx, choice);
+                ctx.request_repaint();
             }
             Action::SetInterfaceLanguage(choice) => {
                 self.settings.interface_language = choice;
@@ -8651,6 +8658,22 @@ mod tests {
         app.open_chat = None;
         app.tick_video(&ctx);
         assert!(app.video.message().is_none());
+    }
+
+    /// Choosing a font saves the choice and installs it at once.
+    #[test]
+    fn choosing_a_font_saves_and_applies_it() {
+        use crate::settings::FontChoice;
+        let mut app = app();
+        let ctx = egui::Context::default();
+        app.attach(&ctx);
+        assert_eq!(app.settings.font, FontChoice::System);
+        app.apply(Action::SetFont(FontChoice::Inter), &ctx);
+        assert_eq!(app.settings.font, FontChoice::Inter);
+        assert!(crate::theme::inter_chosen());
+        app.apply(Action::SetFont(FontChoice::System), &ctx);
+        assert_eq!(app.settings.font, FontChoice::System);
+        assert!(!crate::theme::inter_chosen());
     }
 
     /// A video opens over the window at a size worth the room, goes back to

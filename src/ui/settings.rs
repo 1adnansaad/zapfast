@@ -314,6 +314,14 @@ fn sections(app: &App) -> Vec<Section> {
     };
     appearance.row(translated(locale, "Theme"), detail, theme_picker);
     appearance.row(
+        translated(locale, "Font"),
+        translated(
+            locale,
+            "System is your desktop's interface font. Inter looks the same on every computer.",
+        ),
+        font_picker,
+    );
+    appearance.row(
         translated(locale, "Wallpaper"),
         Text::default(),
         move |ui, app| {
@@ -1008,6 +1016,28 @@ fn theme_picker(ui: &mut egui::Ui, app: &mut App) {
 const THEMES_GUIDE: &str = "https://zapfast.rocks/themes/";
 
 /// The interface language menu.
+fn font_picker(ui: &mut egui::Ui, app: &mut App) {
+    use crate::settings::FontChoice;
+    let palette = app.palette;
+    let selected = app.settings.font;
+    // "Inter" is a name; "System" is a word.
+    let label = |choice: FontChoice| match choice {
+        FontChoice::System => crate::i18n::gettext(app.locale, choice.label()).into_owned(),
+        FontChoice::Inter => choice.label().to_owned(),
+    };
+    let response = egui::ComboBox::from_id_salt("interface_font")
+        .selected_text(label(selected))
+        .width(200.0_f32.min(ui.available_width()))
+        .show_ui(ui, |ui| {
+            for choice in FontChoice::ALL {
+                if theme_option(ui, &palette, &label(choice), selected == choice) {
+                    app.actions.push(Action::SetFont(choice));
+                }
+            }
+        });
+    theme::reveal_focus(&response.response);
+}
+
 fn language_picker(ui: &mut egui::Ui, app: &mut App) {
     let palette = app.palette;
     let selected = app.settings.interface_language;

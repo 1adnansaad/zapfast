@@ -1460,6 +1460,14 @@ msgstr ""
 msgid "After 1 hour"
 msgstr ""
 
+#: src/ui/settings.rs
+msgid "Font"
+msgstr "字体"
+
+#: src/ui/settings.rs
+msgid "System is your desktop's interface font. Inter looks the same on every computer."
+msgstr "“系统”使用桌面的界面字体。Inter 在每台电脑上都一样。"
+
 #: src/ui/conversation.rs
 msgid "Fill the window"
 msgstr "填满窗口"

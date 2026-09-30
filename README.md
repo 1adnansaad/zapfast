@@ -115,7 +115,8 @@ See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
   Hebrew or Arabic is aligned to the right, with its time on its own line when
   the text has more than one. Carets and copied text stay on the logical message.
   Text uses the system's interface font (San Francisco on macOS, Segoe UI
-  on Windows, the desktop's `system-ui` font on Linux), and emoji look as they
+  on Windows, the desktop's `system-ui` font on Linux), or the bundled Inter
+  if you choose it under **Settings > Appearance > Font**, and emoji look as they
   do in the system's other apps: Apple Color Emoji on macOS, Segoe UI Emoji on
   Windows, and the desktop's emoji font on Linux. The bundled Noto Color Emoji
   draws whatever those lack (country flags on Windows, or every emoji on a

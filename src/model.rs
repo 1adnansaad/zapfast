@@ -1601,6 +1601,8 @@ pub enum Action {
     DownloadUpdate,
     InstallUpdate,
     SetTheme(crate::settings::ThemeChoice),
+    /// Draws the interface in the platform's font or in the bundled Inter.
+    SetFont(crate::settings::FontChoice),
     SetInterfaceLanguage(Option<crate::i18n::Locale>),
     SetCustomTheme(String),
     SetWallpaperColor(crate::settings::WallpaperColor),

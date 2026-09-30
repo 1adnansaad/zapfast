@@ -1505,6 +1505,14 @@ msgstr ""
 msgid "After 1 hour"
 msgstr ""
 
+#: src/ui/settings.rs
+msgid "Font"
+msgstr "Fonte"
+
+#: src/ui/settings.rs
+msgid "System is your desktop's interface font. Inter looks the same on every computer."
+msgstr "\"Sistema\" é a fonte da interface do seu computador. Inter fica igual em todos os computadores."
+
 #: src/ui/conversation.rs
 msgid "Fill the window"
 msgstr "Preencher a janela"

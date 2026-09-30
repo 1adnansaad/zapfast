@@ -488,16 +488,41 @@ pub fn apply(ctx: &egui::Context, palette: &Palette) {
     ctx.set_global_style(style);
 }
 
-/// The platform's interface font at four weights (Inter where there is
-/// none, and in tests, so layouts do not depend on the machine), egui's own
-/// fonts behind it, and installed fonts for the scripts it lacks, hinted as
-/// the desktop asks. Inter also draws the [`tabular`] timers.
-fn install_fonts(ctx: &egui::Context) {
-    let primary = if cfg!(test) {
+/// Whether the interface is drawn in the bundled Inter instead of the
+/// platform's font (Settings, Appearance, Font).
+static INTER: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+/// Chooses the interface's typeface and installs it. Call it before
+/// [`install`] with the saved choice, and again when the choice changes.
+pub fn set_font(ctx: &egui::Context, font: crate::settings::FontChoice) {
+    let inter = font == crate::settings::FontChoice::Inter;
+    if INTER.swap(inter, std::sync::atomic::Ordering::AcqRel) != inter {
+        install_fonts(ctx);
+    }
+}
+
+/// Whether Inter is the chosen typeface.
+#[cfg(test)]
+pub fn inter_chosen() -> bool {
+    INTER.load(std::sync::atomic::Ordering::Acquire)
+}
+
+/// The typeface the interface is asked to draw with: the setting's, and
+/// always Inter in tests, so layouts do not depend on the machine.
+fn primary_font() -> fastframe_fonts::Primary {
+    if cfg!(test) || INTER.load(std::sync::atomic::Ordering::Acquire) {
         fastframe_fonts::Primary::Inter
     } else {
         fastframe_fonts::Primary::System
-    };
+    }
+}
+
+/// The chosen interface font at four weights (the platform's, or Inter
+/// where there is none), egui's own fonts behind it, and installed fonts
+/// for the scripts it lacks, hinted as the desktop asks. Inter also draws
+/// the [`tabular`] timers.
+fn install_fonts(ctx: &egui::Context) {
+    let primary = primary_font();
     let mut fonts = fastframe_fonts::FontSetup::default()
         .primary(primary)
         .definitions();
