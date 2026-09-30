@@ -878,8 +878,10 @@ and selects Reply, types quickly, completes emoji and mentions, searches the GIF
 picker and sends a still sticker, opens group information and the shortcut list,
 and changes themes through Settings. It uses the normal mouse and keyboard handlers;
 a local responder handles outgoing messages with no WhatsApp connection.
-The GIF-search thumbnails and still stickers are rendered from the bundled
-Noto emoji font; demo GIF search uses these local fixtures. The tour makes no
+The demo's profile pictures, photos, video clips, GIF-search thumbnails, and captioned stickers
+are stock media compiled into demo builds only, all CC0 or in the public domain
+(`assets/demo/SOURCES.md` lists each source); demo GIF search uses these local
+fixtures, and the remaining stickers come from the bundled Noto emoji font. The tour makes no
 sound and holds its final frame. Space rebuilds the sample and replays.
 For an automatic start, add `--demo-tour-delay 5000` (milliseconds).
 Use `--demo` instead of `--demo-tour` to explore the sample chats yourself.

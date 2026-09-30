@@ -1,5 +1,6 @@
 //! Offline sample data for screenshots, recorded tours, and headless UI tests.
 
+pub mod stock;
 pub mod tour;
 
 use std::collections::HashMap;
@@ -26,30 +27,9 @@ struct Sample {
     lines: &'static [(bool, &'static str)],
 }
 
-/// Generates a small JPEG attachment preview.
+/// A small JPEG attachment preview: one of the stock pictures, by `seed`.
 pub fn sample_thumbnail(seed: u32) -> Vec<u8> {
-    let (width, height) = (64u32, 48u32);
-    let mut image = image::RgbImage::new(width, height);
-    for (x, y, pixel) in image.enumerate_pixels_mut() {
-        let t = x as f32 / width as f32;
-        let u = y as f32 / height as f32;
-        let hue = ((seed * 37) % 360) as f32;
-        let base = crate::theme::hsl_rgb(hue, 0.45, 0.35 + 0.3 * u);
-        let dark = ((x as i32 - 40).pow(2) + (y as i32 - 30).pow(2)) < 120;
-        *pixel = if dark {
-            image::Rgb([30, 30, 34])
-        } else {
-            image::Rgb([
-                (base[0] as f32 * (0.7 + 0.3 * t)) as u8,
-                (base[1] as f32 * (0.7 + 0.3 * t)) as u8,
-                (base[2] as f32 * (0.7 + 0.3 * t)) as u8,
-            ])
-        };
-    }
-    let mut bytes = Vec::new();
-    let mut encoder = image::codecs::jpeg::JpegEncoder::new_with_quality(&mut bytes, 70);
-    let _ = encoder.encode_image(&image);
-    bytes
+    stock::thumbnail_for(seed)
 }
 
 /// A small street-map picture standing in for a location's map preview.
@@ -304,6 +284,7 @@ fn plant_avatars(app: &mut App) {
     }
     let mut everyone: Vec<String> = sample_ids().iter().map(|id| (*id).to_owned()).collect();
     everyone.push(ME.to_owned());
+    everyone.extend(app.contacts.keys().cloned());
     for chat in &app.chats {
         everyone.extend(chat.participants.iter().cloned());
     }
@@ -313,7 +294,12 @@ fn plant_avatars(app: &mut App) {
         } else {
             "person"
         };
-        let path = dir.join(format!("demo-{kind}-{}.jpg", crate::util::hue(&id) as u32));
+        let name = format!("demo-{kind}-{}.jpg", crate::util::hue(&id) as u32);
+        if let Some(picture) = stock::avatar(&id) {
+            app.adopt_avatar(&id, stock::save(&dir, &name, picture));
+            continue;
+        }
+        let path = dir.join(name);
         if !path.exists() {
             let picture = painted_avatar(&id);
             if picture.save(&path).is_err() {
@@ -324,7 +310,8 @@ fn plant_avatars(app: &mut App) {
     }
 }
 
-/// Generates one 128-pixel id-colored profile picture.
+/// Generates one 128-pixel id-colored profile picture, for the chats
+/// without a stock one.
 fn painted_avatar(id: &str) -> image::RgbImage {
     let hue = crate::util::hue(id);
     let motif = (crate::util::hue(&format!("motif-{id}")) as u32) % 4;
@@ -416,48 +403,8 @@ fn tint(hue: f32, saturation: f32, value: f32) -> image::Rgb<u8> {
 
 fn sample_files(app: &App) -> (std::path::PathBuf, std::path::PathBuf) {
     let dir = app.dirs.media_cache_dir();
-    let _ = std::fs::create_dir_all(&dir);
-    let photo = dir.join("demo-photo.jpg");
-    if !photo.exists() {
-        let (width, height) = (900u32, 1200u32);
-        let mut image = image::RgbImage::new(width, height);
-        for (x, y, pixel) in image.enumerate_pixels_mut() {
-            let t = y as f32 / height as f32;
-            let base = crate::theme::hsl_rgb(200.0 + 40.0 * t, 0.5, 0.35 + 0.35 * t);
-            let ring = ((x as i32 - 450).pow(2) + (y as i32 - 700).pow(2)) as f32;
-            let on_ring = (ring.sqrt() - 260.0).abs() < 14.0;
-            *pixel = if on_ring {
-                image::Rgb([250, 244, 220])
-            } else {
-                image::Rgb(base)
-            };
-        }
-        let _ = image.save(&photo);
-    }
-    let sticker = dir.join("demo-sticker.gif");
-    if !sticker.exists()
-        && let Ok(file) = std::fs::File::create(&sticker)
-    {
-        let mut encoder = image::codecs::gif::GifEncoder::new(file);
-        let _ = encoder.set_repeat(image::codecs::gif::Repeat::Infinite);
-        for step in 0..8u32 {
-            let mut frame = image::RgbaImage::from_pixel(160, 160, image::Rgba([0, 0, 0, 0]));
-            let angle = step as f32 * std::f32::consts::TAU / 8.0;
-            let (cx, cy) = (80.0 + 40.0 * angle.cos(), 80.0 + 40.0 * angle.sin());
-            for (x, y, pixel) in frame.enumerate_pixels_mut() {
-                let d = ((x as f32 - cx).powi(2) + (y as f32 - cy).powi(2)).sqrt();
-                if d < 28.0 {
-                    *pixel = image::Rgba([255, 200, 60, 255]);
-                }
-            }
-            let _ = encoder.encode_frame(image::Frame::from_parts(
-                frame,
-                0,
-                0,
-                image::Delay::from_numer_denom_ms(120, 1),
-            ));
-        }
-    }
+    let photo = stock::save_photo(&dir, stock::SPACEWALK);
+    let sticker = stock::save(&dir, "demo-sticker.webp", stock::ANIMATED_STICKER);
     (photo, sticker)
 }
 
@@ -590,10 +537,15 @@ pub fn populate(app: &mut App) {
                 base + 30,
                 Content::Image {
                     caption: Some("The difference engine, finally assembled".into()),
-                    media: media("image/jpeg", 1_843_201, Some(1600), Some(1200)),
+                    media: media(
+                        "image/jpeg",
+                        1_843_201,
+                        Some(stock::ENGINE.width),
+                        Some(stock::ENGINE.height),
+                    ),
                 },
             );
-            row.thumbnail = Some(sample_thumbnail(1));
+            row.thumbnail = Some(stock::thumbnail(stock::ENGINE));
             row.reactions.push(Reaction {
                 sender: ME.into(),
                 from_me: true,
@@ -676,7 +628,7 @@ pub fn populate(app: &mut App) {
                     }),
                 },
             );
-            row.thumbnail = Some(sample_thumbnail(3));
+            row.thumbnail = Some(stock::thumbnail(stock::SPOTIFAST));
             row
         },
     ];
@@ -695,7 +647,7 @@ pub fn populate(app: &mut App) {
                     note: false,
                 },
             );
-            row.thumbnail = Some(sample_thumbnail(2));
+            row.thumbnail = Some(stock::thumbnail(stock::LAUNCH));
             row
         },
         message(
@@ -722,7 +674,12 @@ pub fn populate(app: &mut App) {
                 older + 60 * 18,
                 Content::Image {
                     caption: None,
-                    media: media("image/jpeg", 402_113, Some(900), Some(1200)),
+                    media: media(
+                        "image/jpeg",
+                        stock::SPACEWALK.bytes.len() as u64,
+                        Some(stock::SPACEWALK.width),
+                        Some(stock::SPACEWALK.height),
+                    ),
                 },
             );
             row.forwarded = true;
@@ -738,7 +695,12 @@ pub fn populate(app: &mut App) {
                 true,
                 older + 60 * 19,
                 Content::Sticker {
-                    media: media("image/webp", 20_000, Some(160), Some(160)),
+                    media: media(
+                        "image/webp",
+                        stock::ANIMATED_STICKER.len() as u64,
+                        Some(256),
+                        Some(256),
+                    ),
                     animated: true,
                 },
             );
@@ -810,12 +772,17 @@ pub fn populate(app: &mut App) {
                 group_base + 60,
                 Content::Image {
                     caption: Some("Tonight's venue, doors at 18:30".into()),
-                    media: media("image/jpeg", 1_204_551, Some(1600), Some(1200)),
+                    media: media(
+                        "image/jpeg",
+                        1_204_551,
+                        Some(stock::VENUE.width),
+                        Some(stock::VENUE.height),
+                    ),
                 },
             );
             row.sender = tom.0.to_owned();
             row.sender_name = Some(tom.1.to_owned());
-            row.thumbnail = Some(sample_thumbnail(2));
+            row.thumbnail = Some(stock::thumbnail(stock::VENUE));
             row.reactions.push(Reaction {
                 sender: jonas.0.into(),
                 from_me: false,
@@ -958,13 +925,26 @@ fn shared_pack_sample(app: &mut App, open: bool) {
     }
 }
 
-/// Opens the sticker tab on `shelf` with emoji stickers tagged the way
-/// WhatsApp tags them, a Signal-style pack, and a pack made here.
+/// Opens the sticker tab on `shelf` with stock and emoji stickers tagged the
+/// way WhatsApp tags them, a Signal-style pack, and a pack made here.
 fn sticker_sample(app: &mut App, shelf: crate::model::StickerShelf, search: &str) {
     let dir = app.dirs.media_cache_dir().join("demo-stickers");
     let _ = std::fs::create_dir_all(&dir);
     let make = |character: char| -> Option<std::path::PathBuf> {
         let path = dir.join(format!("{:x}.webp", character as u32));
+        if let Some(sticker) = stock::sticker(character) {
+            // A captioned stock sticker, tagged with its emoji as WhatsApp's are.
+            let info = crate::sticker_meta::StickerInfo {
+                emojis: vec![character.to_string()],
+                ..Default::default()
+            };
+            let tagged = crate::sticker_meta::write(sticker, &info)?;
+            return Some(stock::save(
+                &dir,
+                &format!("{:x}.webp", character as u32),
+                &tagged,
+            ));
+        }
         if !path.exists() {
             let emoji = tour::media::emoji_image(character, 150).ok()?;
             let mut tile = image::RgbaImage::new(192, 192);
@@ -985,7 +965,7 @@ fn sticker_sample(app: &mut App, shelf: crate::model::StickerShelf, search: &str
         characters.chars().filter_map(&make).collect()
     };
     app.picker = Some(crate::model::PickerTab::Stickers);
-    app.stickers = set("😂🐸🎉👋😎🚀🥳🙏🔥");
+    app.stickers = set("🤣🐸🚀🙅🥱🐶🦉🎉🔥");
     app.stickers_saved = set("❤😍🤣🐱");
     app.stickers_received = set("🐶🌮🎈🦄");
     let ducks = set("🦆🐤🐣🐥🦢🪿");
@@ -1511,9 +1491,6 @@ fn message_info_sample(app: &mut App, recorded: bool) {
     });
 }
 
-/// A three-second H.264 and AAC clip, the same one the video tests decode.
-const DEMO_VIDEO: &[u8] = include_bytes!("../tests/fixtures/video/sample.mp4");
-
 /// Pictures with and without captions, forwarded or not, from both sides,
 /// so the forwarded label and the time over a picture can be checked.
 fn photos_sample(app: &mut App) {
@@ -1521,19 +1498,15 @@ fn photos_sample(app: &mut App) {
     let now = crate::util::now();
     let dir = app.dirs.media_cache_dir();
     let _ = std::fs::create_dir_all(&dir);
-    let wide = dir.join("demo-photo-wide.jpg");
-    if !wide.exists() {
-        // Light towards the bottom, where the time sits over it.
-        let (width, height) = (1200u32, 800u32);
-        let image = image::RgbImage::from_fn(width, height, |x, y| {
-            let t = y as f32 / height as f32;
-            let hue = 30.0 + 20.0 * x as f32 / width as f32;
-            image::Rgb(crate::theme::hsl_rgb(hue, 0.55, 0.45 + 0.45 * t))
-        });
-        let _ = image.save(&wide);
-    }
+    // Light towards the top; the time sits over the dark of its lower corner.
+    let wide = stock::save_photo(&dir, stock::DUSK);
     let photo = |caption: Option<&str>| {
-        let mut media = media("image/jpeg", 312_400, Some(1200), Some(800));
+        let mut media = media(
+            "image/jpeg",
+            stock::DUSK.bytes.len() as u64,
+            Some(stock::DUSK.width),
+            Some(stock::DUSK.height),
+        );
         media.path = Some(wide.clone());
         Content::Image {
             caption: caption.map(str::to_owned),
@@ -1546,7 +1519,7 @@ fn photos_sample(app: &mut App) {
             "photos-caption",
             true,
             0,
-            photo(Some("The workshop, from the gallery")),
+            photo(Some("The launch, from the causeway")),
         ),
         message(id, "photos-in", false, 0, photo(None)),
         message(id, "photos-out", true, 0, photo(None)),
@@ -1583,18 +1556,23 @@ fn photos_sample(app: &mut App) {
 fn video_sample(app: &mut App, play: Option<&str>) {
     let id = SAMPLES[0].id;
     let now = crate::util::now();
-    let path = app.dirs.media_cache_dir().join("demo-video.mp4");
-    let _ = std::fs::create_dir_all(app.dirs.media_cache_dir());
-    let _ = std::fs::write(&path, DEMO_VIDEO);
+    let dir = app.dirs.media_cache_dir();
+    let path = stock::save(&dir, "demo-video.mp4", stock::VIDEO);
+    let round = stock::save(&dir, "demo-note.mp4", stock::NOTE);
     let clip = |note: bool, downloaded: bool| {
-        let mut media = media("video/mp4", DEMO_VIDEO.len() as u64, Some(320), Some(180));
+        let (bytes, side, file) = if note {
+            (stock::NOTE, (360, 360), &round)
+        } else {
+            (stock::VIDEO, (640, 360), &path)
+        };
+        let mut media = media("video/mp4", bytes.len() as u64, Some(side.0), Some(side.1));
         if downloaded {
-            media.path = Some(path.clone());
+            media.path = Some(file.clone());
         }
         Content::Video {
             caption: None,
             media,
-            seconds: Some(3),
+            seconds: Some(stock::CLIP_SECONDS),
             gif: false,
             note,
         }
@@ -1610,7 +1588,7 @@ fn video_sample(app: &mut App, play: Option<&str>) {
         rows.push(playing);
     }
     for (index, row) in rows.iter_mut().enumerate() {
-        row.thumbnail = Some(sample_thumbnail(index as u32 + 5));
+        row.thumbnail = Some(stock::thumbnail(stock::LAUNCH));
         row.timestamp = now - 300 + index as i64 * 100;
     }
     app.conversations.entry(id.into()).or_default().messages = rows;
@@ -1620,7 +1598,7 @@ fn video_sample(app: &mut App, play: Option<&str>) {
     if let Some(message) = play {
         app.actions.push(crate::model::Action::PlayVideo {
             message: message.into(),
-            path,
+            path: if message == "demo-note" { round } else { path },
         });
     }
 }
