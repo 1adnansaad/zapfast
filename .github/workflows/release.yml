@@ -164,6 +164,10 @@ jobs:
             target/aarch64-apple-darwin/release/zapfast \
             target/x86_64-apple-darwin/release/zapfast \
             -output universal/zapfast
+          # The two release builds fill most of the runner's disk; the DMG
+          # and its notarization copy need room of their own.
+          rm -rf target
+          df -h "$RUNNER_TEMP"
 
       - uses: ruby/setup-ruby@v1
         with:
