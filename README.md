@@ -170,6 +170,8 @@ See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
   still paste as text.
   MP3, M4A, AAC, and OGG files go as audio messages; other audio, such as
   WAV or FLAC, goes as a document so the recipient gets the original file.
+  An MP4 video goes with a preview picture, its size, and its length, so it
+  shows as a video before it is downloaded and plays in its message here too.
 - **Mute chats** for eight hours, one week, or indefinitely. The setting also
   applies on your phone and to desktop notifications. Mute changes from your
   phone survive history arriving later, including during initial linking.

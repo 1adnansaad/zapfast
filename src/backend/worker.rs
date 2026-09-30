@@ -8115,28 +8115,56 @@ async fn prepare_media(
     let size = bytes.len() as u64;
     let mime_owned = mime.to_owned();
     if kind == "video" {
+        // The picture, size, and length phones show before downloading it.
+        // Reading a second of frames takes a moment, so off the runtime.
+        let poster = {
+            let bytes = bytes.clone();
+            tokio::task::spawn_blocking(move || crate::animation::poster(&bytes))
+                .await
+                .ok()
+                .flatten()
+        };
+        let thumbnail = poster
+            .as_ref()
+            .and_then(|poster| poster.picture.clone())
+            .and_then(|picture| thumbnail_jpeg(&image::DynamicImage::ImageRgb8(picture)));
+        let size_in_pixels = poster.as_ref().map(|poster| (poster.width, poster.height));
+        let seconds = poster.as_ref().map(|poster| poster.seconds);
         let upload = client
             .upload(bytes.clone(), MediaType::Video, UploadOptions::default())
             .await
             .map_err(|error| error.to_string())?;
-        let message = video_message(
+        let mut message = video_message(
             upload,
             VideoOptions {
                 mimetype: Some(mime_owned.clone()),
                 gif_playback: Some(gif),
+                jpeg_thumbnail: thumbnail.clone(),
+                duration_seconds: seconds,
                 ..Default::default()
             },
         );
+        if let (Some(video), Some((width, height))) =
+            (message.video_message.as_option_mut(), size_in_pixels)
+        {
+            video.width = Some(width);
+            video.height = Some(height);
+        }
         return Ok(Prepared {
             message,
             content: Content::Video {
                 caption: None,
-                media: media(Some(&mime_owned), Some(size), None, None),
-                seconds: None,
+                media: media(
+                    Some(&mime_owned),
+                    Some(size),
+                    size_in_pixels.map(|(width, _)| width),
+                    size_in_pixels.map(|(_, height)| height),
+                ),
+                seconds,
                 gif,
                 note: false,
             },
-            thumbnail: None,
+            thumbnail,
             bytes,
             mime: mime_owned,
             file_name: file_name.map(str::to_owned),

@@ -5927,7 +5927,10 @@ fn video(
 ) -> f32 {
     use crate::video::State;
     let palette = view.palette;
-    let Some(thumbnail) = message.thumbnail.as_deref() else {
+    // A video sent before ZapFast made thumbnails has none; its file is
+    // here, so its first frame stands in. Without either, it is a file card.
+    let thumbnail = message.thumbnail.as_deref();
+    if thumbnail.is_none() && media.path.is_none() {
         let title = if gif { "GIF" } else { "Video" };
         let mut detail = Vec::new();
         if let Some(seconds) = seconds {
@@ -5946,9 +5949,16 @@ fn video(
             actions,
         );
         return width;
-    };
+    }
     let limit = width.min(PICTURE_WIDTH);
-    let size = frame_size(media, Some((16, 9)), limit, PICTURE_HEIGHT.min(limit * 1.3));
+    // Without its size, a widescreen frame that fills the bubble: the hint is
+    // in pixels, so a bare 16 by 9 would shrink it to the narrowest picture.
+    let size = frame_size(
+        media,
+        Some((1280, 720)),
+        limit,
+        PICTURE_HEIGHT.min(limit * 1.3),
+    );
     let (rect, response) = ui.allocate_exact_size(size, Sense::click());
     let playing = match (&media.path, gif) {
         (Some(path), true) => Some(animation::frame(
@@ -5997,14 +6007,31 @@ fn video(
                     6.0,
                 );
             }
-            None => {
-                // Registering the poster decodes it, so it waits for the row to show.
-                let uri = thumbnail_uri(ui.ctx(), &message.chat, &message.id, thumbnail);
-                egui::Image::new(uri)
-                    .fit_to_exact_size(size)
-                    .corner_radius(6.0)
-                    .paint_at(ui, rect);
-            }
+            None => match (thumbnail, &media.path) {
+                (Some(thumbnail), _) => {
+                    // Registering the poster decodes it, so it waits for the row to show.
+                    let uri = thumbnail_uri(ui.ctx(), &message.chat, &message.id, thumbnail);
+                    egui::Image::new(uri)
+                        .fit_to_exact_size(size)
+                        .corner_radius(6.0)
+                        .paint_at(ui, rect);
+                }
+                (None, Some(path)) => {
+                    ui.painter().rect_filled(rect, 6.0, Color32::BLACK);
+                    if let animation::Frame::Ready(texture) =
+                        animation::frame(ui, path, rect, false)
+                    {
+                        paint_texture(
+                            ui,
+                            fit_within(texture.size_vec2(), rect),
+                            texture.id(),
+                            Rect::from_min_max(egui::Pos2::ZERO, egui::pos2(1.0, 1.0)),
+                            6.0,
+                        );
+                    }
+                }
+                (None, None) => {}
+            },
         }
         let state = status.as_ref().map(|status| status.state);
         if state != Some(State::Playing) {
