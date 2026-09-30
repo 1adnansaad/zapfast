@@ -13,12 +13,14 @@ is ZapFast's sibling: the same native interface, for Spotify. Both are built
 on [fastframe](https://github.com/crmne/fastframe), the shared foundation for
 native Rust apps built with egui.
 
+https://github.com/user-attachments/assets/2bf86b54-45fc-4add-8de7-c426c3cdad9b
+
+See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
+
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/screenshot-light.png">
   <img src="docs/screenshot.png" alt="ZapFast showing a conversation with an attachment, voice messages, reactions, a quoted reply, and a link preview">
 </picture>
-
-See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/screenshot-group-light.png">
