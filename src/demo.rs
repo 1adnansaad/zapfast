@@ -10223,6 +10223,38 @@ mod tests {
         assert_eq!(app.dialog, Some(crate::model::Dialog::Shortcuts));
     }
 
+    /// Sending from the emoji picker's Recent row leaves the row in its
+    /// order until the picker opens again, so the same emoji can be sent
+    /// twice from where it was (#294).
+    #[test]
+    fn recent_emoji_keep_their_order_while_the_picker_is_open() {
+        let mut app = app();
+        let ctx = egui::Context::default();
+        app.attach(&ctx);
+        app.settings.recent_emoji = vec!["😀".into(), "❤️".into()];
+        apply_flags(&mut app, Some("picker"));
+        render(&mut app, &ctx);
+        assert_eq!(app.picker_recent, Some(vec!["😀".into(), "❤️".into()]));
+        app.actions
+            .push(crate::model::Action::InsertEmoji("❤️".into()));
+        render(&mut app, &ctx);
+        assert_eq!(app.settings.recent_emoji[0], "❤️", "remembered at once");
+        assert_eq!(
+            app.picker_recent,
+            Some(vec!["😀".into(), "❤️".into()]),
+            "shown as it was"
+        );
+        app.picker = None;
+        render(&mut app, &ctx);
+        assert_eq!(app.picker_recent, None);
+        apply_flags(&mut app, Some("picker"));
+        render(&mut app, &ctx);
+        assert_eq!(
+            app.picker_recent.as_ref().map(|recent| recent[0].as_str()),
+            Some("❤️")
+        );
+    }
+
     /// The About dialog shows the mark the app ships, rendered at its pixel
     /// size from the packaged SVG, not a disc drawn in the theme's colours.
     #[test]

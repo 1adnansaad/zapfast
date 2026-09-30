@@ -467,6 +467,10 @@ pub struct App {
     /// Picker anchor at the composer button.
     pub picker_anchor: Option<egui::Rect>,
     pub picker_search: String,
+    /// Recent emoji as they stood when the emoji picker opened. The row keeps
+    /// that order while the picker is open, so the same emoji can be sent
+    /// again from where it was; it catches up the next time it opens (#294).
+    pub picker_recent: Option<Vec<String>>,
     /// Whether the newly opened picker should focus search.
     pub picker_focus: bool,
     /// Message the full emoji reaction picker is targeting.
@@ -988,6 +992,7 @@ impl App {
             picker: None,
             picker_anchor: None,
             picker_search: String::new(),
+            picker_recent: None,
             picker_focus: false,
             reaction_target: None,
             reaction_anchor: None,
