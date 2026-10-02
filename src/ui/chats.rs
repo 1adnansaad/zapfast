@@ -828,7 +828,7 @@ fn hit_row(app: &mut App, ui: &mut egui::Ui, hit: &Message) {
             x += who.size().x;
         } else if crate::model::ChatKind::from_id(&hit.chat) == crate::model::ChatKind::Group {
             let sender = app.display_name_or(&hit.sender, hit.sender_name.as_deref());
-            let first = sender.split_whitespace().next().unwrap_or(&sender);
+            let first = app.short_name(&hit.sender, &sender);
             let who = widgets::line(
                 ui,
                 &format!("{first}: "),
@@ -1089,7 +1089,7 @@ fn row(app: &mut App, ui: &mut egui::Ui, chat: &Chat) -> egui::Response {
                 x += 20.0;
             } else if chat.is_group() {
                 let sender = app.display_name_or(&last.sender, last.sender_name.as_deref());
-                let first = sender.split_whitespace().next().unwrap_or(&sender);
+                let first = app.short_name(&last.sender, &sender);
                 prefix = format!("{first}: ");
                 let sender = widgets::line(
                     ui,
