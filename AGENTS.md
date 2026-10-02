@@ -293,7 +293,12 @@ protocol. These notes are for coding agents and new contributors.
 - Older history comes from the phone on demand (`Command::FetchOlder` →
   `Client::fetch_message_history` → a `HistorySync` chunk with
   `sync_type == ON_DEMAND`); the archive is paged first, the phone only
-  when it is exhausted.
+  when it is exhausted. Short and empty chats ask on their own, and a phone
+  with nothing to add often leaves that unanswered, so only an `explicit`
+  request (the reader scrolled to the top) reports a silent phone, once per
+  chat until it answers or the link reconnects. A chunk saying nothing more
+  remains on the phone sets `chats.history_start`, and that chat is not
+  asked again.
 - Platform-specific code belongs behind `cfg` blocks; a change for one
   platform must keep the other two compiling.
 

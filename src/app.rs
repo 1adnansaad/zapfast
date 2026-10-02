@@ -171,6 +171,9 @@ pub struct Conversation {
     pub requested: bool,
     /// Whether a phone history request is active.
     pub fetching_phone: bool,
+    /// Whether the active phone request is the reader's own (see
+    /// [`Command::FetchOlder`]).
+    pub phone_explicit: bool,
     /// Whether phone history is exhausted or unavailable.
     pub phone_exhausted: bool,
     /// Last phone response time for request throttling.
@@ -2176,7 +2179,7 @@ impl App {
                             self.scroll_to_bottom = true;
                         }
                         if bare {
-                            self.fetch_older(&chat);
+                            self.fetch_older(&chat, false);
                         }
                         // After the first page, load toward a pending search anchor once.
                         if !older
@@ -2404,6 +2407,7 @@ impl App {
                 Event::OlderFetched { chat, more } => {
                     let conversation = self.conversations.entry(chat).or_default();
                     conversation.fetching_phone = false;
+                    conversation.phone_explicit = false;
                     conversation.phone_exhausted = !more;
                     conversation.phone_answered = Some(Instant::now());
                     if conversation.phone_delivered {
@@ -3055,7 +3059,7 @@ impl App {
         }
     }
 
-    pub fn load_older(&mut self, chat: &str) {
+    pub fn load_older(&mut self, chat: &str, explicit: bool) {
         let Some(conversation) = self.conversations.get_mut(chat) else {
             return;
         };
@@ -3066,7 +3070,7 @@ impl App {
             return;
         };
         if conversation.complete {
-            self.fetch_older(chat);
+            self.fetch_older(chat, explicit);
             return;
         }
         conversation.loading_older = true;
@@ -3079,11 +3083,25 @@ impl App {
     }
 
     /// Requests older phone history when available and outside the cooldown.
-    pub fn fetch_older(&mut self, chat: &str) {
+    /// `explicit` when the reader asked by scrolling to the top; automatic
+    /// requests never report a silent phone.
+    pub fn fetch_older(&mut self, chat: &str, explicit: bool) {
         let Some(conversation) = self.conversations.get_mut(chat) else {
             return;
         };
-        if conversation.fetching_phone || conversation.phone_exhausted {
+        if conversation.phone_exhausted {
+            return;
+        }
+        if conversation.fetching_phone {
+            if explicit && !conversation.phone_explicit {
+                // The reader scrolled up while an automatic request waits:
+                // the worker makes that request theirs instead of asking twice.
+                conversation.phone_explicit = true;
+                self.backend.send(Command::FetchOlder {
+                    chat: chat.to_owned(),
+                    explicit,
+                });
+            }
             return;
         }
         // Back off after empty responses. Only a connected phone can answer.
@@ -3099,11 +3117,15 @@ impl App {
             return;
         }
         conversation.fetching_phone = true;
+        conversation.phone_explicit = explicit;
         self.scroll_anchor = conversation
             .messages
             .first()
             .map(|oldest| oldest.id.clone());
-        self.backend.send(Command::FetchOlder(chat.to_owned()));
+        self.backend.send(Command::FetchOlder {
+            chat: chat.to_owned(),
+            explicit,
+        });
     }
 
     fn mark_read(&mut self, chat: &str) {
@@ -3204,7 +3226,7 @@ impl App {
             .get(&id)
             .is_some_and(|conversation| conversation.complete && conversation.messages.is_empty())
         {
-            self.fetch_older(&id);
+            self.fetch_older(&id, false);
         }
         if self
             .chat(&id)
@@ -3828,8 +3850,8 @@ impl App {
             }
             Action::MarkRead(chat) => self.mark_read(&chat),
             Action::MarkUnread(chat) => self.mark_unread(&chat),
-            Action::LoadOlder(chat) => self.load_older(&chat),
-            Action::FetchOlder(chat) => self.fetch_older(&chat),
+            Action::LoadOlder { chat, explicit } => self.load_older(&chat, explicit),
+            Action::FetchOlder(chat) => self.fetch_older(&chat, true),
             Action::Download {
                 card,
                 chat,
@@ -6438,6 +6460,54 @@ mod tests {
         assert!(app.badge.is_none());
         #[cfg(target_os = "windows")]
         assert!(app.taskbar_badge_count().is_none());
+    }
+
+    /// A short chat asks the phone by itself; only the reader scrolling to
+    /// the top makes a request theirs, so only then may a silent phone be
+    /// reported (#325). Scrolling up during an automatic request claims it
+    /// once rather than asking twice.
+    #[test]
+    fn only_the_reader_scrolling_up_asks_the_phone_explicitly() {
+        let mut app = app();
+        let (backend, mut commands, events) = Backend::recording_with_events();
+        app.backend = backend;
+        app.link = LinkStatus::Connected;
+        let chat = "4915700000003@s.whatsapp.net";
+        let conversation = app.conversations.entry(chat.into()).or_default();
+        conversation.merge(vec![message(chat, "m1", 100)], false);
+        conversation.complete = true;
+        let mut asked = || {
+            std::iter::from_fn(|| commands.try_recv().ok())
+                .filter_map(|command| match command {
+                    Command::FetchOlder { explicit, .. } => Some(explicit),
+                    _ => None,
+                })
+                .collect::<Vec<_>>()
+        };
+
+        app.load_older(chat, false);
+        assert_eq!(asked(), [false]);
+        app.load_older(chat, false);
+        assert_eq!(asked(), [false; 0], "one request at a time");
+        app.load_older(chat, true);
+        assert_eq!(asked(), [true], "the reader claims the waiting request");
+        app.load_older(chat, true);
+        assert_eq!(asked(), [false; 0], "and only once");
+
+        events
+            .send(Event::OlderFetched {
+                chat: chat.into(),
+                more: false,
+            })
+            .unwrap();
+        app.handle_events();
+        assert!(!app.conversations[chat].phone_explicit);
+        app.load_older(chat, true);
+        assert_eq!(
+            asked(),
+            [false; 0],
+            "a chat at its start is not asked again"
+        );
     }
 
     #[test]

@@ -1311,8 +1311,14 @@ pub enum Action {
     /// Marks a read chat unread, here and on the phone; does not invent a
     /// pending count.
     MarkUnread(ChatId),
-    LoadOlder(ChatId),
-    /// Requests messages older than the local archive.
+    /// Pages older messages from the archive, then the phone. `explicit` when
+    /// the reader scrolled to the top, rather than a short chat filling its
+    /// view: only the reader's own requests report a phone that is silent.
+    LoadOlder {
+        chat: ChatId,
+        explicit: bool,
+    },
+    /// Requests messages older than the local archive, for the reader.
     FetchOlder(ChatId),
     Download {
         card: Option<usize>,

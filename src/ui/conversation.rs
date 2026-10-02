@@ -2262,6 +2262,7 @@ fn messages(app: &mut App, ui: &mut egui::Ui, chat: &Chat) {
     let complete = conversation.complete;
     let loading = conversation.loading_older;
     let fetching = conversation.fetching_phone;
+    let fetching_explicit = conversation.phone_explicit;
     let exhausted = conversation.phone_exhausted;
     conversation.rows = rows;
     // Keep the rows on screen where they were when rows above them changed
@@ -2354,8 +2355,18 @@ fn messages(app: &mut App, ui: &mut egui::Ui, chat: &Chat) {
     // request more immediately.
     let fits = output.content_size.y <= output.inner_rect.height() + 1.0;
     let near_top = output.state.offset.y < 80.0;
-    if (near_top || fits) && ((!complete && !loading) || (complete && !fetching && !exhausted)) {
-        actions.push(Action::LoadOlder(chat.id.clone()));
+    // Only a transcript the reader scrolled up through is their ask; a short
+    // chat, or one still on its way to the end, is not.
+    let explicit = near_top && !fits && !scroll_to_bottom;
+    // A reader reaching the top while an automatic request waits claims it.
+    let claim = fetching && explicit && !fetching_explicit;
+    if (near_top || fits)
+        && ((!complete && !loading) || (complete && (!fetching || claim) && !exhausted))
+    {
+        actions.push(Action::LoadOlder {
+            chat: chat.id.clone(),
+            explicit,
+        });
     }
     app.actions.extend(actions);
     if edge_scrolled_up {
