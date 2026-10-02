@@ -77,8 +77,7 @@ The sticker is a 512 × 512 WebP under WhatsApp's 100 KB limit.
 ## Attachments
 
 Paste a picture or copied files, drop files on the window, or select them with
-the paperclip. On Wayland, dropping files does not work yet: copy them in the
-file manager and paste them instead.
+the paperclip.
 They stay above the composer until you send them, with the typed text as a
 caption. Press Escape or click a file's close button to remove it. Incoming
 non-sticker attachments up to 64 MiB download when they enter view if automatic
