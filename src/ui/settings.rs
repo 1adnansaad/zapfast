@@ -1809,6 +1809,8 @@ mod tests {
         assert_eq!(rows.len(), 3);
         let rows = titles(window(Locale::German), &Filter::new("benachrichtigungen"));
         assert_eq!(rows.len(), 3);
+        let rows = titles(window(Locale::Turkish), &Filter::new("bildirimler"));
+        assert_eq!(rows.len(), 3);
     }
 
     #[test]
