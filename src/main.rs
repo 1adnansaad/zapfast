@@ -219,6 +219,12 @@ fn run() -> eframe::Result<()> {
     logging
         .init()
         .map_err(|error| eframe::Error::AppCreation(error.into()))?;
+    // Moving a single-account setup into its account folder needs the
+    // keyring; when it cannot finish, the log says why.
+    if !demo && let Err(error) = dirs.adopt_single_account() {
+        log::error!("could not move the linked account into its folder: {error}");
+        return Err(eframe::Error::AppCreation(error.into()));
+    }
     let settings = settings::Settings::load(&dirs.settings_file());
     let demo_persistence = demo.then(|| dirs.state.join("window.ron"));
 
@@ -227,6 +233,7 @@ fn run() -> eframe::Result<()> {
         app::App::headless(dirs, settings).0
     } else {
         app::App::new(&waker, dirs, settings, app::AppOptions { tray: true })
+            .map_err(|error| eframe::Error::AppCreation(error.into()))?
     };
     if cli.verbose {
         app.update_arguments.push("--verbose".into());
@@ -555,19 +562,25 @@ impl eframe::App for Shell {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let app = &mut *self.app;
         app.frame_ui(ui);
-        let startup = app.backend.take_startup();
+        let startups: Vec<_> = app
+            .accounts
+            .iter_mut()
+            .filter_map(|account| account.backend.take_startup())
+            .collect();
         if let Some(receipt) = self.update_receipt.take() {
             std::thread::spawn(move || {
                 if let Err(error) = receipt.acknowledge() {
                     log::warn!("could not acknowledge the update: {error:#}");
                     return;
                 }
-                if let Some(startup) = startup {
+                for startup in startups {
                     let _ = startup.send(());
                 }
             });
-        } else if let Some(startup) = startup {
-            let _ = startup.send(());
+        } else {
+            for startup in startups {
+                let _ = startup.send(());
+            }
         }
         #[cfg(feature = "demo")]
         if let Some(tour) = self.tour.as_mut() {
