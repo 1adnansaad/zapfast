@@ -367,8 +367,9 @@ See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
   `~/.config/autostart/zapfast.desktop` on Linux, a LaunchAgent in
   `~/Library/LaunchAgents` on macOS, or a `Run` entry for your user on Windows,
   and removes it when turned off. `zapfast --start-hidden` does the same by hand;
-  it opens the window anyway when no tray is available. The Flatpak does not
-  offer this setting yet.
+  it opens the window anyway when no tray shows ZapFast yet. The tray icon
+  still appears once a panel starts, even one that starts after ZapFast at
+  login. The Flatpak does not offer this setting yet.
 - **Desktop notifications.** Get notifications with the chat picture when you
   are away from the open chat. Muted chats do not notify you, and archived
   chats stay quiet until you unarchive them. Windows notifications
