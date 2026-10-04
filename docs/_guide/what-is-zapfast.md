@@ -28,8 +28,8 @@ RAM, compared with 1.13 GB for WhatsApp Web and its Chromium processes.
   reactions, forwards, pictures, files, stickers, GIFs, and recorded voice
   messages.
   You can add captions to attachments before sending them.
-- **Plays media in the chat.** Voice messages, GIFs, and animated stickers
-  play in place. The required audio and video decoders are built in.
+- **Plays media in the chat.** Voice messages, videos, round video messages,
+  GIFs, and animated stickers play in place. The required audio and video decoders are built in.
 - **Uses interactive messages.** Business templates show their text, images,
   and options. Reply buttons and simple lists send the selected response with
   a quote, web links open in your browser, and copy-code buttons use the clipboard. [See examples and limitations](/using-zapfast/#interactive-messages).
@@ -40,6 +40,11 @@ RAM, compared with 1.13 GB for WhatsApp Web and its Chromium processes.
   message they announced. Supported desktops show the unread count on the app
   icon in the taskbar or dock; on Windows, the count appears while the window
   has a taskbar button. Muting a chat also mutes it on your phone.
+- **Keeps several numbers.** Link more than one WhatsApp number and switch
+  between them in one window.
+- **Keeps chats private on this computer.** The archive is encrypted with a
+  key in your OS keyring, locked chats stay hidden behind a local code, and an
+  optional app lock hides the whole window behind a password.
 - **Copies message text.** Select part of a message or copy across messages
   with the time, date, and sender included.
 
@@ -47,11 +52,11 @@ RAM, compared with 1.13 GB for WhatsApp Web and its Chromium processes.
 
 ZapFast does not currently support:
 
-- Calls, status posts, communities, newsletters, and group administration.
-- Playing ordinary videos in the app; they open in your player. Voice
-  messages and GIFs do play in place.
-- Replying with an attachment (replying with text or a voice message
-  works).
+- Calls, status posts, communities, publishing to channels, and group
+  administration beyond a group's name and photo (members, admins,
+  descriptions, settings).
+- Playing videos in codecs other than H.264 in the app; they open in your
+  system player.
 - Interactive forms, payments, shopping flows, carousel selections, or forwarding
   interactive messages. Use these in WhatsApp Web or on your phone. Embedded
   videos, documents, and templates without readable text

@@ -96,7 +96,8 @@ the updated PO files. Keep each translatable literal inside its own `gettext`
 call so extraction can find it. Normal Cargo builds compile the catalogs without
 gettext tools.
 
-Linux needs the development packages listed in the README; `nix develop`
+Linux needs the development packages listed in
+[Getting started](https://zapfast.rocks/getting-started/); `nix develop`
 provides the complete development environment. When changing `Cargo.lock` or
 `flake.nix`, also verify `nix build` on a Nix host or wait for the Nix CI job.
 Passing CI is required, but does not replace review for correctness, product

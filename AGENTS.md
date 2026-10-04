@@ -449,8 +449,8 @@ A release is not finished when the tag is pushed. Do these in order:
   data and a headless layout test of every screen (`src/demo.rs`); extend
   the sample when a new kind of content or state is added, and use
   `--demo-shot` to look at the result.
-- Update the README when user-visible behaviour, settings, files, or network
-  access changes.
+- Update the docs site (`docs/`) when user-visible behaviour, settings,
+  files, or network access changes. The README stays a short pointer to it.
 - Run the full checks before finishing:
 
   ```sh

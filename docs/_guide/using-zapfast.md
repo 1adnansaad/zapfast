@@ -171,6 +171,26 @@ reply actions remain unavailable.
 
 ![Synthetic carousel cards in the light theme](/screenshot-carousel-light.png)
 
+## Videos and photos
+
+Click a video to play it in its message, with sound, a seek bar, and a mute
+switch; round video messages play inside their circle. Double-click one, or
+use the button at the end of its controls, to play it over the whole window:
+Space plays and pauses, the arrows jump five seconds, M mutes, and Escape puts
+it back. Videos in codecs other than H.264 open in your system player.
+
+Click a downloaded photo to preview it, with zoom (wheel, Ctrl+wheel, or a
+pinch) and **Copy image**. **Save as…** in a downloaded attachment's
+right-click menu keeps a copy wherever you choose.
+
+## Polls
+
+Choose **Create poll** from the plus menu beside the message field to ask a
+question with 2 to 12 answers; turn off **Allow multiple answers** for a
+single choice. Click an answer to vote, and click it again to take the vote
+back. Creating polls in chats with disappearing messages is not supported
+yet.
+
 ## Voice messages
 
 Voice messages play in the chat with a seekable waveform. The chip beside the
@@ -202,7 +222,8 @@ messages stored on this computer; and finds contacts without an existing chat.
 Use `↑`/`↓` to select a matching chat and Enter to open it ready for typing.
 Click a message result to jump to it, or a contact to start a chat. Use
 `Alt+↑/↓`, or `Ctrl+Shift+[` and `Ctrl+Shift+]` as in WhatsApp, to switch chats
-without leaving the composer (Command instead of Ctrl on macOS). Within an open
+without leaving the composer (Command instead of Ctrl on macOS), and
+`Ctrl+1` through `Ctrl+9` to open the chat at that position in the list. Within an open
 chat, `PgUp`/`PgDn` scroll by about a page, and `Home`/`End` jump to the top or
 the newest message (when the input is empty).
 
@@ -217,14 +238,39 @@ person is not already in ZapFast's contacts, **Add** saves them, adding them to
 your phone's contacts if you chose that for the last contact you added. A card with only a local number shows the number.
 
 The chips under the search bar narrow the list to **Unread**, **Private**
-(one-to-one chats), or **Groups**. A chip with unread chats shows how many it
+(one-to-one chats), **Favorites** (in your phone's order), or **Groups**.
+Followed channels have their own **Channels** chip, and **Archived** opens the
+archived chats. A chip with unread chats shows how many it
 has. Click the active chip again, or **All**, to see every chat. The
 filter applies only to this list: search and the archive still show everything,
 and it resets when ZapFast restarts.
 
-Right-click a chat to pin, archive, or mute it for eight hours, one week, or
-indefinitely. These changes also apply on your phone. Click the chat header to
-see its picture, number, and group members.
+Right-click a chat to pin, favorite, archive, mark as unread, or mute it for
+eight hours, one week, or indefinitely. These changes also apply on your
+phone. **Delete chat** in the same menu and **Clear chat** in the chat
+header's menu need a connection: the phone acts first, and the chat leaves
+this computer once it confirms. Groups and channels can be left from the same
+menu, keeping their history here.
+
+The search icon in a chat's header (`Ctrl+F`) opens a pane listing that
+chat's matches, newest first. Its calendar narrows them to one day.
+
+Click the chat header to see its picture, number, and group members. When
+WhatsApp lets you edit a group's info, rename it with the pencil beside its
+name and click its photo to change it. Clicking a `chat.whatsapp.com` invite
+link shows the group and joins it without leaving ZapFast.
+
+## Locked chats
+
+**Lock chat** in a chat's right-click menu moves it into a locked folder: it
+leaves the chat list, search, and the unread count, and never raises a
+notification. The lock syncs with your phone and other linked devices.
+
+Choose **Locked** beside the chat filters and type your local code to open
+them; the first time, ZapFast offers to set one up. The code is separate from
+your phone's and hides chats without encrypting them. Leaving the tab,
+changing the code, or closing the window hides them again. Locked chats are
+read-only in ZapFast for now.
 
 ## Labels
 
