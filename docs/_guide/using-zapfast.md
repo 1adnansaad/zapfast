@@ -45,9 +45,11 @@ messages sent within the same second when loading history. If an earlier
 build missed a message or put nearby messages in the wrong order, right-click
 a message just after the affected area and choose **Reload earlier messages**.
 This asks your phone for up to 50 messages before that point and merges them
-into the archive. Keep your phone online. Availability depends on what the
-phone sends; messages deleted for you stay deleted. This action does not
-require unlinking your account or clearing the archive.
+into the archive. Edited history snapshots restore the reply even when the
+original version was never stored on this computer. Keep your phone online.
+Availability depends on what the phone sends; messages deleted for you stay
+deleted. This action does not require unlinking your account or clearing the
+archive.
 
 ## Stickers
 
