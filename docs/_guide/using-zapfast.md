@@ -40,6 +40,15 @@ without another network request. Neither deletion can be undone.
 **Delete chat** and **Clear chat** already sync in 0.19.0, as described under
 [Chats](#chats).
 
+**Development builds** preserve edited replies and the phone's order for
+messages sent within the same second when loading history. If an earlier
+build missed a message or put nearby messages in the wrong order, right-click
+a message just after the affected area and choose **Reload earlier messages**.
+This asks your phone for up to 50 messages before that point and merges them
+into the archive. Keep your phone online. Availability depends on what the
+phone sends; messages deleted for you stay deleted. This action does not
+require unlinking your account or clearing the archive.
+
 ## Stickers
 
 The sticker tab works like WhatsApp's: a row of tabs holds **Recent**

@@ -348,6 +348,11 @@ protocol. These notes are for coding agents and new contributors.
   chat until it answers or the link reconnects. A chunk saying nothing more
   remains on the phone sets `chats.history_start`, and that chat is not
   asked again.
+  `ReloadHistory` requests before a selected archived message to repair gaps
+  inside existing history, even after reaching the chat's start. History keeps
+  same-key edited snapshots and uses `HistorySyncMsg.msg_order_id` to break
+  timestamp ties in the archive, paging, and interface. A replay without order
+  metadata must not erase it, and an unedited replay must not undo an edit.
 - Scrolling comes from fastframe-scroll: `App::scrolling.apply` runs first
   in each unlocked frame and sets the wheel step (120 points a notch), and on
   Linux scales touchpad gestures, glides after the lift, and holds a gesture

@@ -322,6 +322,10 @@ pub struct Message {
     pub from_me: bool,
     /// Unix seconds.
     pub timestamp: i64,
+    /// The phone's order within a history conversation, used to break timestamp
+    /// ties. Live messages and older archives may not have one.
+    #[serde(default)]
+    pub history_order: Option<i64>,
     pub content: Content,
     pub status: Delivery,
     /// First delivered-receipt Unix timestamp for outgoing messages.
@@ -1361,6 +1365,10 @@ pub enum Action {
     },
     /// Requests messages older than the local archive, for the reader.
     FetchOlder(ChatId),
+    ReloadHistory {
+        chat: ChatId,
+        message: String,
+    },
     Download {
         card: Option<usize>,
         chat: ChatId,

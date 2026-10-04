@@ -297,6 +297,10 @@ msgstr "Abrir no player do sistema"
 msgid "Message info"
 msgstr "Dados da mensagem"
 
+#: src/ui/conversation.rs:3323 src/ui/conversation.rs:4195
+msgid "Reload earlier messages"
+msgstr ""
+
 #: src/ui/conversation.rs:4125 src/ui/image_preview.rs:62
 #: src/ui/image_preview.rs:173
 msgid "Copy image"

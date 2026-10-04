@@ -297,6 +297,10 @@ msgstr "Sistem oynatıcısında aç"
 msgid "Message info"
 msgstr "Mesaj bilgisi"
 
+#: src/ui/conversation.rs:3323 src/ui/conversation.rs:4195
+msgid "Reload earlier messages"
+msgstr ""
+
 #: src/ui/conversation.rs:4125 src/ui/image_preview.rs:62
 #: src/ui/image_preview.rs:173
 msgid "Copy image"

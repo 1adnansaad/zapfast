@@ -300,6 +300,10 @@ msgstr "Apri nel lettore di sistema"
 msgid "Message info"
 msgstr "Info messaggio"
 
+#: src/ui/conversation.rs:3323 src/ui/conversation.rs:4195
+msgid "Reload earlier messages"
+msgstr ""
+
 #: src/ui/conversation.rs:4125 src/ui/image_preview.rs:62
 #: src/ui/image_preview.rs:173
 msgid "Copy image"

@@ -221,6 +221,12 @@ pub enum Command {
         chat: ChatId,
         explicit: bool,
     },
+    /// Requests phone history immediately before an archived message to repair
+    /// gaps or ordering inside an already loaded conversation.
+    ReloadHistory {
+        chat: ChatId,
+        message: String,
+    },
     Download {
         card: Option<usize>,
         chat: ChatId,

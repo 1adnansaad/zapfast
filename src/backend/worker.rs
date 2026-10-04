@@ -1000,6 +1000,8 @@ struct ParsedMessage {
     from_me: bool,
     push_name: Option<String>,
     timestamp: i64,
+    history_order: Option<i64>,
+    edited: bool,
     content: Content,
     status: Delivery,
     quoted: Option<Quoted>,
@@ -3228,6 +3230,7 @@ impl Worker {
             read_at: None,
             quoted,
             reactions: Vec::new(),
+            history_order: None,
             edited: false,
             mentions,
             forwarded: forwarded_of(base),
@@ -3664,6 +3667,7 @@ impl Worker {
             read_at: None,
             quoted: None,
             reactions: Vec::new(),
+            history_order: None,
             edited: false,
             mentions: Vec::new(),
             forwarded: false,
@@ -4160,7 +4164,8 @@ impl Worker {
                     read_at,
                     quoted,
                     reactions,
-                    edited: false,
+                    history_order: message.history_order,
+                    edited: message.edited,
                     mentions,
                     forwarded: message.forwarded,
                     thumbnail: message.thumbnail,
@@ -4181,10 +4186,25 @@ impl Worker {
                 }
                 // History replays and on-demand chunks can repeat a message the
                 // archive already holds; keep the files it already downloaded.
+                let mut keep_raw = false;
                 if let Ok(Some(existing)) = self.archive.message(&id, &row.id) {
                     row.content.keep_local_paths(&existing.content);
+                    // A repeated original must not undo a later edit or revoke.
+                    if (existing.edited && !row.edited)
+                        || matches!(existing.content, Content::Revoked)
+                    {
+                        row.content = existing.content;
+                        row.edited = existing.edited;
+                        row.quoted = existing.quoted;
+                        row.mentions = existing.mentions;
+                        row.thumbnail = existing.thumbnail;
+                        keep_raw = true;
+                    }
                 }
-                if let Err(error) = self.archive.insert_message(&row, Some(&raw)) {
+                if let Err(error) = self
+                    .archive
+                    .insert_message(&row, (!keep_raw).then_some(raw.as_slice()))
+                {
                     log::warn!("could not store a history message: {error}");
                 }
                 self.settle_early_events(&id, &row.id);
@@ -4336,15 +4356,43 @@ impl Worker {
             self.emit(Event::OlderFetched { chat, more: false });
             return;
         }
-        let (Some(client), Some(jid)) = (self.client.clone(), Self::jid_of(&chat)) else {
-            // Offline requests retry after reconnection; the banner shows state.
-            self.emit(Event::OlderFetched { chat, more: true });
-            return;
-        };
         // Chats without messages request history from the current time.
         let (id, from_me, timestamp) = match self.archive.oldest(&chat) {
             Ok(Some(oldest)) => (oldest.id, oldest.from_me, oldest.timestamp),
             _ => (String::new(), false, crate::util::now()),
+        };
+        self.request_history(chat, id, from_me, timestamp, explicit);
+    }
+
+    fn reload_history(&mut self, chat: ChatId, message: String) {
+        if self.pending_older.contains_key(&chat) {
+            return;
+        }
+        let Ok(Some(anchor)) = self.archive.message(&chat, &message) else {
+            self.emit(Event::OlderFetched { chat, more: true });
+            self.emit(Event::Error(
+                "This message is no longer in the archive".into(),
+            ));
+            return;
+        };
+        // This repairs gaps inside existing history, even when the phone has
+        // already told us there is nothing before the start of the chat.
+        self.older_warned.remove(&chat);
+        self.request_history(chat, anchor.id, anchor.from_me, anchor.timestamp, true);
+    }
+
+    fn request_history(
+        &mut self,
+        chat: ChatId,
+        id: String,
+        from_me: bool,
+        timestamp: i64,
+        explicit: bool,
+    ) {
+        let (Some(client), Some(jid)) = (self.client.clone(), Self::jid_of(&chat)) else {
+            // Offline requests retry after reconnection; the banner shows state.
+            self.emit(Event::OlderFetched { chat, more: true });
+            return;
         };
         self.pending_older.insert(
             chat.clone(),
@@ -4529,6 +4577,7 @@ impl Worker {
             }
             Command::LoadChat { chat, before } => self.load_chat(chat, before),
             Command::FetchOlder { chat, explicit } => self.fetch_older(chat, explicit),
+            Command::ReloadHistory { chat, message } => self.reload_history(chat, message),
             Command::LoadUntil { chat, id, before } => self.load_until(chat, id, before),
             Command::SearchMessages { query } => self.search_messages(query),
             Command::SearchChatMessages {
@@ -6105,6 +6154,7 @@ impl Worker {
             read_at: None,
             quoted: shown,
             reactions: Vec::new(),
+            history_order: None,
             edited: false,
             mentions,
             forwarded: false,
@@ -8929,6 +8979,7 @@ pub(super) async fn file_outbound(
         read_at: None,
         quoted: None,
         reactions: Vec::new(),
+        history_order: None,
         edited: false,
         mentions: mentions
             .into_iter()
@@ -8990,12 +9041,24 @@ fn parse_conversation(conversation: wa::Conversation) -> ParsedChat {
         let Some(id) = key.id.clone().filter(|id| !id.is_empty()) else {
             continue;
         };
-        let Some(message) = info.message.as_option() else {
+        let Some(original) = info.message.as_option() else {
             continue;
         };
         let from_me = key.from_me.unwrap_or(false);
         let timestamp = info.message_timestamp.unwrap_or(0) as i64;
         newest = newest.max(timestamp);
+        let base = original.get_base_message();
+        // History can carry the edited snapshot under the original message's
+        // key. A separate edit event has a different outer key and must not
+        // become a new message at the edit time.
+        let snapshot = base.protocol_message.as_option().and_then(|protocol| {
+            (protocol.r#type == Some(wa::message::protocol_message::Type::MESSAGE_EDIT)
+                && protocol.key.as_option().and_then(|key| key.id.as_deref()) == Some(&id))
+            .then(|| protocol.edited_message.as_option())
+            .flatten()
+        });
+        let edited = snapshot.is_some() || original.edited_message.is_set();
+        let message = snapshot.unwrap_or(original);
         let base = message.get_base_message();
         if let Some(protocol) = base.protocol_message.as_option() {
             if protocol.r#type == Some(wa::message::protocol_message::Type::REVOKE)
@@ -9065,6 +9128,16 @@ fn parse_conversation(conversation: wa::Conversation) -> ParsedChat {
         let Some(mut content) = classify(message) else {
             continue;
         };
+        // Normalizing an edit must not remove an outer view-once restriction.
+        if original.is_view_once()
+            && let Some(kind) = crate::model::OnceMedia::of(&content)
+        {
+            content = Content::PhoneOnly {
+                view_once: true,
+                live_location: false,
+                once: Some(kind),
+            };
+        }
         if matches!(content, Content::LiveLocation { .. })
             && let Some(last) = info.final_live_location.as_option()
         {
@@ -9140,6 +9213,10 @@ fn parse_conversation(conversation: wa::Conversation) -> ParsedChat {
             from_me,
             push_name: non_empty(&info.push_name),
             timestamp,
+            history_order: entry
+                .msg_order_id
+                .and_then(|order| i64::try_from(order).ok()),
+            edited,
             content,
             status,
             quoted,
@@ -9147,8 +9224,25 @@ fn parse_conversation(conversation: wa::Conversation) -> ParsedChat {
             mentions: mentioned_of(base),
             forwarded: forwarded_of(base),
             thumbnail: thumbnail_of(base),
-            raw: message.encode_to_vec(),
-            poll_secret: info.message_secret.clone(),
+            raw: if original.is_view_once() {
+                original
+            } else {
+                message
+            }
+            .encode_to_vec(),
+            poll_secret: info.message_secret.clone().or_else(|| {
+                original
+                    .message_context_info
+                    .as_option()
+                    .and_then(|context| context.message_secret.clone())
+                    .or_else(|| {
+                        original
+                            .get_base_message()
+                            .message_context_info
+                            .as_option()
+                            .and_then(|context| context.message_secret.clone())
+                    })
+            }),
             poll_votes: info.poll_updates.clone(),
             receipts: if from_me {
                 info.user_receipt.clone()
@@ -9308,6 +9402,7 @@ mod tests {
                 mentions: Vec::new(),
             }),
             reactions: Vec::new(),
+            history_order: None,
             edited: false,
             mentions: Vec::new(),
             forwarded: false,
@@ -11033,6 +11128,7 @@ mod tests {
                 from_me: false,
                 emoji: "👍".into(),
             }],
+            history_order: None,
             edited: true,
             mentions: Vec::new(),
             forwarded: false,
@@ -11887,6 +11983,7 @@ mod receipt_tests {
             read_at: None,
             quoted: None,
             reactions: Vec::new(),
+            history_order: None,
             edited: false,
             mentions: Vec::new(),
             forwarded: false,
@@ -12212,6 +12309,232 @@ mod receipt_tests {
         assert_eq!(stored.reactions[0].emoji, "🏆");
         assert!(!stored.reactions[0].from_me);
         assert_eq!(stored.reactions[0].sender, reactor);
+    }
+
+    fn file_history_entries(worker: &mut Worker, messages: Vec<wa::HistorySyncMsg>) {
+        worker.apply_history(
+            ParsedHistory {
+                chats: vec![parse_conversation(wa::Conversation {
+                    id: PEER.into(),
+                    messages,
+                    ..Default::default()
+                })],
+                push_names: Vec::new(),
+                lids: Vec::new(),
+                stickers: Vec::new(),
+            },
+            false,
+        );
+    }
+
+    #[test]
+    fn history_fidelity_keeps_the_phones_order_within_one_second() {
+        let (mut worker, _events, _inbox, _wa) = worker();
+        let entries = [("third", 3), ("first", 1), ("second", 2)]
+            .into_iter()
+            .map(|(id, order)| {
+                let mut entry = history_entry(
+                    PEER,
+                    id,
+                    false,
+                    None,
+                    wa::Message::text(id),
+                    Vec::new(),
+                    None,
+                );
+                entry.msg_order_id = Some(order);
+                entry
+            })
+            .collect();
+        file_history_entries(&mut worker, entries);
+        let messages = worker.archive.messages(PEER, None, 10).unwrap();
+        assert_eq!(
+            messages
+                .iter()
+                .map(|message| message.id.as_str())
+                .collect::<Vec<_>>(),
+            ["first", "second", "third"],
+        );
+    }
+
+    #[test]
+    fn history_fidelity_keeps_an_edited_reply_snapshot() {
+        let (mut worker, _events, _inbox, _wa) = worker();
+        let edited = wa::Message::text_with_context(
+            "Updated fixture reply",
+            wa::ContextInfo {
+                stanza_id: Some("quoted-fixture".into()),
+                participant: Some(PEER.into()),
+                quoted_message: MessageField::some(wa::Message::text("Original fixture")),
+                ..Default::default()
+            },
+        );
+        let raw = wa::Message {
+            message_context_info: MessageField::some(wa::MessageContextInfo {
+                message_secret: Some(vec![7; 32]),
+                ..Default::default()
+            }),
+            protocol_message: MessageField::some(wa::message::ProtocolMessage {
+                r#type: Some(wa::message::protocol_message::Type::MESSAGE_EDIT),
+                key: MessageField::some(wa::MessageKey {
+                    id: Some("edited-reply".into()),
+                    remote_jid: Some(PEER.into()),
+                    from_me: Some(false),
+                    ..Default::default()
+                }),
+                edited_message: MessageField::some(edited),
+                timestamp_ms: Some(110_000),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        file_history_entries(
+            &mut worker,
+            vec![history_entry(
+                PEER,
+                "edited-reply",
+                false,
+                None,
+                raw,
+                Vec::new(),
+                None,
+            )],
+        );
+        let message = worker
+            .archive
+            .message(PEER, "edited-reply")
+            .unwrap()
+            .expect("an edited history row is a message, not disposable protocol traffic");
+        assert_eq!(message.content, Content::text("Updated fixture reply"));
+        assert_eq!(message.timestamp, 100, "keep the original send time");
+        assert!(message.edited);
+        let raw = worker.archive.raw(PEER, "edited-reply").unwrap().unwrap();
+        let raw = wa::Message::decode_from_slice(&raw).unwrap();
+        assert_eq!(classify(&raw), Some(Content::text("Updated fixture reply")));
+        assert_eq!(
+            raw.message_context_info.as_option().unwrap().message_secret,
+            Some(vec![7; 32])
+        );
+        assert_eq!(message.quoted.unwrap().id, "quoted-fixture");
+    }
+
+    #[test]
+    fn history_fidelity_keeps_edit_wrappers_and_view_once_restrictions() {
+        let edited = wa::Message {
+            edited_message: MessageField::some(wa::message::FutureProofMessage {
+                message: MessageField::some(wa::Message::text("Updated fixture")),
+            }),
+            ..Default::default()
+        };
+        let protected = wa::Message {
+            view_once_message_v2: MessageField::some(wa::message::FutureProofMessage {
+                message: MessageField::some(wa::Message {
+                    protocol_message: MessageField::some(wa::message::ProtocolMessage {
+                        r#type: Some(wa::message::protocol_message::Type::MESSAGE_EDIT),
+                        key: MessageField::some(wa::MessageKey {
+                            id: Some("protected".into()),
+                            ..Default::default()
+                        }),
+                        edited_message: MessageField::some(wa::Message {
+                            image_message: MessageField::some(wa::message::ImageMessage {
+                                caption: Some("Updated fixture caption".into()),
+                                ..Default::default()
+                            }),
+                            ..Default::default()
+                        }),
+                        ..Default::default()
+                    }),
+                    ..Default::default()
+                }),
+            }),
+            ..Default::default()
+        };
+        let (mut worker, _events, _inbox, _wa) = worker();
+        file_history_entries(
+            &mut worker,
+            vec![
+                history_entry(PEER, "wrapped", false, None, edited, Vec::new(), None),
+                history_entry(PEER, "protected", false, None, protected, Vec::new(), None),
+            ],
+        );
+        let wrapped = worker.archive.message(PEER, "wrapped").unwrap().unwrap();
+        assert!(wrapped.edited);
+        assert_eq!(wrapped.content, Content::text("Updated fixture"));
+        let protected = worker.archive.message(PEER, "protected").unwrap().unwrap();
+        assert!(matches!(
+            protected.content,
+            Content::PhoneOnly {
+                view_once: true,
+                ..
+            }
+        ));
+        let raw = worker.archive.raw(PEER, "protected").unwrap().unwrap();
+        assert!(wa::Message::decode_from_slice(&raw).unwrap().is_view_once());
+    }
+
+    #[test]
+    fn history_fidelity_replay_keeps_existing_edits_and_revokes() {
+        let (mut worker, _events, _inbox, _wa) = worker();
+        for (id, content, edited) in [
+            ("edited", Content::text("Updated fixture"), true),
+            ("revoked", Content::Revoked, false),
+        ] {
+            let entry = || {
+                history_entry(
+                    PEER,
+                    id,
+                    false,
+                    None,
+                    wa::Message::text("Original fixture"),
+                    Vec::new(),
+                    None,
+                )
+            };
+            file_history_entries(&mut worker, vec![entry()]);
+            worker
+                .archive
+                .set_content(PEER, id, &content, edited)
+                .unwrap();
+            let raw = worker.archive.raw(PEER, id).unwrap();
+            let mut replay = entry();
+            replay.msg_order_id = Some(42);
+            file_history_entries(&mut worker, vec![replay]);
+            let stored = worker.archive.message(PEER, id).unwrap().unwrap();
+            assert_eq!(stored.content, content);
+            assert_eq!(stored.edited, edited);
+            assert_eq!(stored.history_order, Some(42));
+            assert_eq!(worker.archive.raw(PEER, id).unwrap(), raw);
+        }
+    }
+
+    #[test]
+    fn history_fidelity_does_not_create_a_bubble_for_a_separate_edit_event() {
+        let raw = wa::Message {
+            protocol_message: MessageField::some(wa::message::ProtocolMessage {
+                r#type: Some(wa::message::protocol_message::Type::MESSAGE_EDIT),
+                key: MessageField::some(wa::MessageKey {
+                    id: Some("original-id".into()),
+                    ..Default::default()
+                }),
+                edited_message: MessageField::some(wa::Message::text("Updated fixture")),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let parsed = parse_conversation(wa::Conversation {
+            id: PEER.into(),
+            messages: vec![history_entry(
+                PEER,
+                "separate-edit-id",
+                false,
+                None,
+                raw,
+                Vec::new(),
+                None,
+            )],
+            ..Default::default()
+        });
+        assert!(parsed.messages.is_empty());
     }
 
     #[test]
@@ -14358,6 +14681,8 @@ mod chat_removal_tests {
                         from_me: false,
                         push_name: None,
                         timestamp: at,
+                        history_order: None,
+                        edited: false,
                         content: Content::text(format!("sent at {at}")),
                         status: Delivery::None,
                         quoted: None,
@@ -14946,6 +15271,42 @@ mod older_history_tests {
             "the app stops asking"
         );
         assert!(worker.pending_older.is_empty());
+    }
+
+    #[test]
+    fn history_fidelity_reload_returns_overlapping_rows_before_its_anchor() {
+        let (mut worker, events, _, _) = receipt_tests::worker();
+        worker.apply_history(chat_removal_tests::history(CHAT, &[50, 100]), false);
+        worker.archive.set_history_start(CHAT).unwrap();
+        drain(&events);
+        // The reader chose m100, not the archive's oldest message m50.
+        waiting(&mut worker, true);
+        let filed = worker.apply_history(chat_removal_tests::history(CHAT, &[50, 75]), false);
+        worker.answer_older(filed);
+        let messages = drain(&events)
+            .into_iter()
+            .find_map(|event| match event {
+                Event::Messages {
+                    messages,
+                    older: true,
+                    ..
+                } => Some(messages),
+                _ => None,
+            })
+            .unwrap();
+        assert_eq!(
+            messages.iter().map(|m| m.id.as_str()).collect::<Vec<_>>(),
+            ["m50", "m75"]
+        );
+        assert!(worker.pending_older.is_empty());
+
+        // A known start prevents fetching older history, but not repairing it.
+        worker.reload_history(CHAT.into(), "m100".into());
+        assert_eq!(
+            fetched(&drain(&events)),
+            Some(true),
+            "offline, rather than refused at the chat start"
+        );
     }
 
     #[test]
