@@ -103,13 +103,17 @@ name or description, in the interface language or in English.
 
 - **Enter sends**: when off, Enter adds a line and `Ctrl+Enter` (Command+Enter
   on macOS) sends.
-- **Download files automatically**: files up to 64 MiB, stickers included,
-  download as they come into view. When off, click one to download it.
+- **Download files automatically**: attachments up to 64 MiB download as they
+  come into view. When off, click one to download it. Visible stickers still
+  download automatically. The same 64 MiB limit applies to manual downloads.
+- **Keep chats archived** (development builds): on by default. When off, a new
+  message, received or sent, brings an archived chat back to the list. Applies
+  to all accounts here; it does not read or change the phone's own setting.
 - **Pause other media while recording or playing**: pause music and videos in
   other apps while you record, or while a voice message, audio, or video plays
   with sound, and resume them afterwards. Linux and Windows only.
 - **Locked chats code**: the local code that opens the **Locked** tab. It hides
-  chats; it does not encrypt them.
+  chats and adds no encryption beyond the encrypted message archive.
 
 **Notifications**
 
@@ -158,6 +162,12 @@ the shortcut hints bar under the composer (its × hides it, and **Show shortcut
 hints under the message box** in the Keyboard shortcuts dialog brings it back),
 **Also save to your phone's contacts** in the new-contact dialog, voice
 playback speed, and the chat list and search pane widths.
+
+Development builds also remember the window's size, position, and maximized
+state in `settings.json`, including when reopening from the tray or a
+notification. On Wayland the compositor controls placement, so ZapFast keeps
+the size without choosing the position. These window changes and **Keep chats
+archived** are not yet included in 0.19.0.
 
 Labels always get a chip each, in a row under the filter chips, once a label
 exists. They are kept in the message archive, next to your chats, and never

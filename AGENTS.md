@@ -16,6 +16,10 @@ protocol. These notes are for coding agents and new contributors.
   for it exists.
 - Do not broaden a task into adjacent features or a general refactor.
   Preserve existing user behaviour unless the task changes it.
+- Current limitations are not product exclusions. Before marking a report
+  out of scope, identify the explicit boundary it conflicts with and check
+  the relevant implementation and reported version. A missing feature,
+  download limit, or stale guide does not establish a permanent boundary.
 
 ## Privacy
 
@@ -63,8 +67,9 @@ protocol. These notes are for coding agents and new contributors.
   database. Removing an account deletes its folders after its backend has
   stopped, then its keyring entry.
 - `src/archive.rs` is the SQLite store of chats, messages, contacts, and
-  privacy-id mappings. WhatsApp replays history once, at link time, so the
-  archive is the only copy. It keeps each message's raw protobuf because
+  privacy-id mappings. The phone sends recent history at link time and can
+  supply older history on request, but recovery is not guaranteed. Preserve
+  the local archive. It keeps each message's raw protobuf because
   the keys to fetch an attachment live in it. `src/archive/encryption.rs` opens
   the archive with SQLCipher and a random key stored in the OS keyring. Plaintext
   migration checkpoints the old WAL and verifies an encrypted staging file before
@@ -72,6 +77,15 @@ protocol. These notes are for coding agents and new contributors.
   a disposable archive. Tests use fixtures and mock credentials only.
 - `src/model.rs` holds the app's own types. Views never touch a protobuf;
   the worker translates in `classify()` and `parse_conversation()`.
+- Individual **Delete for me** uses `Command::DeleteLocal` to send through
+  `chat_actions().delete_message_for_me`, removing the local copy only after
+  WhatsApp accepts it. `DeleteMessageForMeUpdate` applies deletions from other
+  devices. The encrypted archive retains pending requests and deletion barriers
+  so reconnects retry uncertain requests and history cannot restore deleted
+  messages. Confirmed deletions with failed local cleanup are repaired without
+  another send. Recovery and callbacks remain bound to the originating account.
+  This sync landed after 0.19.0; that release's local-only behavior was a missing
+  integration, not a product exclusion. Whole-chat deletion and clearing sync too.
 - Favorite chats sync with the phone through the `favorites` app-state action
   (RegularHigh), which carries the whole ordered list: `Event::FavoritesUpdate`
   replaces ours and `send_app_state_action(&schemas::FAVORITES, ..)` writes it.
@@ -169,8 +183,10 @@ protocol. These notes are for coding agents and new contributors.
   keyframe before the start (openh264 must not flush after each packet or
   B-frames stop it) and streams scaled frames with presentation times; the
   interface thread shows the due frame in one texture. rodio's symphonia
-  decodes the AAC track and its position steers the clock. Non-H.264 files go
-  to the system player. `Action::PlayVideo/SeekVideo/ToggleVideoSound` drive
+  decodes the AAC track and its position steers the clock. Unsupported formats
+  go to the system player. Playback reads a downloaded local file; the shared
+  64 MiB attachment download limit applies to automatic and manual downloads,
+  not to the video decoder. `Action::PlayVideo/SeekVideo/ToggleVideoSound` drive
   it; leaving the chat stops it and an unseen video pauses. Round video
   messages (PTV) are `Content::Video { note: true }` and draw as circles.
 - Message bodies paint through `markup::paint_selectable` and single lines
@@ -264,9 +280,10 @@ protocol. These notes are for coding agents and new contributors.
   `ZAPFAST_GIPHY_KEY` (`option_env!`); the repository carries none. The
   phone's recently used stickers arrive in `HistorySync.recent_stickers`
   when the device links and live in the archive's `stickers` table as raw
-  `StickerMetadata`, fetched when the picker opens; favourite stickers sync
-  through app state (`FavoriteSticker`), which whatsapp-rust does not
-  surface, so they are not shown.
+  `StickerMetadata`, fetched when the picker opens. Favourite stickers sync
+  both ways through `FavoriteStickerUpdate` and `schemas::FAVORITE_STICKER`;
+  `backend/worker/stickers.rs` and `archive/stickers.rs` retain pending local
+  changes and recover favourites synced before support was added.
 - `src/paths.rs` moves a setup left by the app's earlier name
   (`fastsapp`, then `fastwhatsapp`) over once, so the linked device survives
   the rename. Migration runs after the single-instance guard and outside demos;

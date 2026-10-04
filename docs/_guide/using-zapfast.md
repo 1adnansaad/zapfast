@@ -24,6 +24,22 @@ Editing uses the composer. Press Escape to cancel.
 Double-click beside a message, or on its edge, to reply to it. A double-click
 on its text still selects the word.
 
+Deleting a message asks which copies to remove. **Delete for everyone**
+revokes it through WhatsApp. In **0.19.0**, **Delete for me** removes only this
+computer's copy, and individual deletions do not sync to or from your phone.
+
+**Development builds** now sync **Delete for me** with your phone and linked
+devices; other people keep their copy. This needs a connection, and the local
+copy disappears only after WhatsApp accepts the deletion. Phone deletions sync
+here too, and history replay cannot restore deleted messages. Interrupted
+requests remain saved for that account and retry when it reconnects, including
+when an acknowledgement was lost. Unlinking clears those requests. Confirmed
+deletions whose local cleanup failed are repaired on restart or reconnect
+without another network request. Neither deletion can be undone.
+
+**Delete chat** and **Clear chat** already sync in 0.19.0, as described under
+[Chats](#chats).
+
 ## Stickers
 
 The sticker tab works like WhatsApp's: a row of tabs holds **Recent**
@@ -79,11 +95,16 @@ The sticker is a 512 × 512 WebP under WhatsApp's 100 KB limit.
 Paste a picture or copied files, drop files on the window, or select them with
 the paperclip.
 They stay above the composer until you send them, with the typed text as a
-caption. Press Escape or click a file's close button to remove it. Incoming
-non-sticker attachments up to 64 MiB download when they enter view if automatic
-downloads are on, or on click. Visible stickers download automatically up to the
-same limit. If an attachment has expired, ZapFast asks your phone to
-upload it again.
+caption. To reply with an attachment, start a reply and then attach the file.
+When sending several files, the caption and reply quote belong to the first
+one. Press Escape or click a file's close button to remove it.
+
+Incoming attachments up to 64 MiB download when they enter view if automatic
+downloads are on, or on click. Visible stickers download automatically even
+when that setting is off. The 64 MiB limit applies to both automatic and manual
+downloads, including videos and stickers; clicking a larger attachment does
+not bypass it. If an attachment has expired, ZapFast asks your phone to upload
+it again.
 
 ## Interactive messages
 
@@ -173,11 +194,15 @@ reply actions remain unavailable.
 
 ## Videos and photos
 
-Click a video to play it in its message, with sound, a seek bar, and a mute
-switch; round video messages play inside their circle. Double-click one, or
-use the button at the end of its controls, to play it over the whole window:
+Click a video to download it to the local cache and play it in its message,
+with sound, a seek bar, and a mute switch; round video messages play inside
+their circle. Already downloaded videos play from their local file. Playback
+waits for the download to finish, and the [64 MiB download limit](#attachments)
+also applies to videos. Double-click one, or use the button at the end of its
+controls, to play it over the whole window:
 Space plays and pauses, the arrows jump five seconds, M mutes, and Escape puts
-it back. Videos in codecs other than H.264 open in your system player.
+it back. The built-in player supports H.264 video in MP4 files; other formats
+open in your system player.
 
 Click a downloaded photo to preview it, with zoom (wheel, Ctrl+wheel, or a
 pinch) and **Copy image**. **Save as…** in a downloaded attachment's
@@ -252,6 +277,13 @@ header's menu need a connection: the phone acts first, and the chat leaves
 this computer once it confirms. Groups and channels can be left from the same
 menu, keeping their history here.
 
+Archived chats stay archived when new messages arrive. **Development builds**
+add **Keep chats archived** in Settings: turn it off to have a new message,
+received or sent, bring the chat back to the list. This setting applies to all
+accounts here. ZapFast does not read the phone's own setting yet, so set it
+here to match. Messages older than the archiving, duplicate deliveries, and
+history replay leave archived chats in place.
+
 The search icon in a chat's header (`Ctrl+F`) opens a pane listing that
 chat's matches, newest first. Its calendar narrows them to one day.
 
@@ -268,9 +300,9 @@ notification. The lock syncs with your phone and other linked devices.
 
 Choose **Locked** beside the chat filters and type your local code to open
 them; the first time, ZapFast offers to set one up. The code is separate from
-your phone's and hides chats without encrypting them. Leaving the tab,
-changing the code, or closing the window hides them again. Locked chats are
-read-only in ZapFast for now.
+your phone's and adds no encryption beyond the encrypted message archive.
+Leaving the tab, changing the code, or closing the window hides them again.
+Locked chats are read-only in ZapFast for now.
 
 ## Labels
 
@@ -309,7 +341,7 @@ its regular taskbar icon size for overlays to appear. The count
 does not count toasts remaining in Windows notification history. On Linux and
 Windows, notifications show the chat picture and open the chat at the message
 they announced when clicked. Muted chats do not send notifications, and
-archived chats stay quiet until you unarchive them. You can change both settings.
+archived chats stay quiet while they remain archived. You can change both settings.
 
 Press `Ctrl+/` or click the keyboard button under the composer to list all
 shortcuts.

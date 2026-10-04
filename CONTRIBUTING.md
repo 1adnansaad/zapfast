@@ -14,7 +14,7 @@ For a feature, explain the user problem. Discuss large changes in an issue
 before writing code. Existing code does not guarantee that a feature fits the
 project.
 
-Some boundaries come from WhatsApp or from upstream libraries:
+Product boundaries and upstream responsibilities:
 
 - The protocol comes from [whatsapp-rust](https://github.com/oxidezap/whatsapp-rust).
   A capability it does not support is fixed upstream first, not reimplemented
@@ -22,6 +22,12 @@ Some boundaries come from WhatsApp or from upstream libraries:
 - ZapFast will not embed a browser engine, add telemetry, or introduce a
   ZapFast-operated service. Features that send message content to a third
   party are out of scope.
+
+The guide's [current limitations](https://zapfast.rocks/what-is-zapfast/#what-it-does-not-do-yet)
+describe what is implemented today, not permanent exclusions. Missing features,
+codec restrictions, and download limits do not by themselves make a report out
+of scope. Check the relevant code and reported version when a guide and a
+report disagree; leave uncertain product decisions to the maintainer.
 
 Never post screenshots of real conversations, contact names, phone numbers,
 keys, or QR codes. Crop a capture to the part that shows the problem and
