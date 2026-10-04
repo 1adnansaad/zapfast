@@ -595,6 +595,14 @@ msgstr "錄音或播放時暫停其他媒體"
 msgid "Music and videos in other apps resume afterwards."
 msgstr "其他應用程式的音樂與影片會在之後繼續播放。"
 
+#: src/ui/settings.rs:421 src/ui/settings.rs:430
+msgid "Keep chats archived"
+msgstr "保持對話封存"
+
+#: src/ui/settings.rs:424
+msgid "When off, a new message brings an archived chat back to the list."
+msgstr "關閉時，新訊息會把已封存的對話移回清單。"
+
 #: src/ui/settings.rs:421
 msgid "Locked chats code"
 msgstr "鎖定對話密碼"

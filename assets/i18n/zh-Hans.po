@@ -610,6 +610,14 @@ msgstr "录音或播放时暂停其他媒体"
 msgid "Music and videos in other apps resume afterwards."
 msgstr "其他应用中的音乐和视频会在结束后继续播放。"
 
+#: src/ui/settings.rs:421 src/ui/settings.rs:430
+msgid "Keep chats archived"
+msgstr "保持聊天归档"
+
+#: src/ui/settings.rs:424
+msgid "When off, a new message brings an archived chat back to the list."
+msgstr "关闭后，新消息会把已归档的聊天移回列表。"
+
 #: src/ui/settings.rs:421
 msgid "Locked chats code"
 msgstr "已锁定聊天的密码"

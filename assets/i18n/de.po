@@ -636,6 +636,16 @@ msgstr "Andere Medien bei Aufnahme und Wiedergabe pausieren"
 msgid "Music and videos in other apps resume afterwards."
 msgstr "Musik und Videos in anderen Apps laufen danach weiter."
 
+#: src/ui/settings.rs:421 src/ui/settings.rs:430
+msgid "Keep chats archived"
+msgstr "Chats archiviert lassen"
+
+#: src/ui/settings.rs:424
+msgid "When off, a new message brings an archived chat back to the list."
+msgstr ""
+"Wenn aus, holt eine neue Nachricht einen archivierten Chat zurück in die "
+"Liste."
+
 #: src/ui/settings.rs:421
 msgid "Locked chats code"
 msgstr "Code für gesperrte Chats"

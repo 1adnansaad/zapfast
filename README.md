@@ -68,7 +68,11 @@ See **[zapfast.rocks](https://zapfast.rocks)** for downloads and guides.
   the end of the list; channels cannot be favorites.
   Followed channels have their own **Channels** chip and stay out of the other
   filters; right-click it to mute or unmute every channel at once. **Archived**
-  opens the archived chats. Right-click a chat and choose **Mark as unread**
+  opens the archived chats. Archived chats stay there when new messages
+  arrive; turn off **Keep chats archived** in Settings to have a new message,
+  received or sent, bring the chat back to the list. ZapFast does not read the
+  phone's own "Keep chats archived" setting yet, so set it here to match.
+  Right-click a chat and choose **Mark as unread**
   to put an empty dot on it, as on the phone; the mark syncs with your phone
   both ways, and opening the chat or a new message clears it. Opening a chat with
   unread messages scrolls to an "unread messages" divider above the first one.

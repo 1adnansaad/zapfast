@@ -630,6 +630,14 @@ msgstr "Kayıt yaparken veya oynatırken diğer medyaları duraklat"
 msgid "Music and videos in other apps resume afterwards."
 msgstr "Diğer uygulamalardaki müzik ve videolar daha sonra devam eder."
 
+#: src/ui/settings.rs:421 src/ui/settings.rs:430
+msgid "Keep chats archived"
+msgstr "Sohbetleri arşivde tut"
+
+#: src/ui/settings.rs:424
+msgid "When off, a new message brings an archived chat back to the list."
+msgstr "Kapalıyken yeni bir mesaj, arşivlenmiş sohbeti listeye geri getirir."
+
 #: src/ui/settings.rs:421
 msgid "Locked chats code"
 msgstr "Kilitli sohbetler kodu"

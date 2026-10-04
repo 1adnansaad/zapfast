@@ -876,6 +876,9 @@ impl App {
             account
                 .backend
                 .send(Command::SetDownloadFolder(folder.clone()));
+            account.backend.send(Command::SetKeepChatsArchived(
+                app.settings.keep_chats_archived,
+            ));
         }
         if crate::autostart::supported() {
             app.start_with_system = Some(crate::autostart::enabled());
@@ -1294,6 +1297,9 @@ impl App {
         };
         account.backend.send(Command::SetDownloadFolder(
             self.settings.download_folder.clone(),
+        ));
+        account.backend.send(Command::SetKeepChatsArchived(
+            self.settings.keep_chats_archived,
         ));
         self.account_before_adding = Some(self.account().id.clone());
         self.park_composer();
@@ -5477,6 +5483,13 @@ impl App {
                         .send(Command::SetDownloadFolder(folder.clone()));
                 }
             }
+            Action::SetKeepChatsArchived(keep) => {
+                self.settings.keep_chats_archived = keep;
+                self.mark_settings_dirty();
+                for account in &self.accounts {
+                    account.backend.send(Command::SetKeepChatsArchived(keep));
+                }
+            }
             Action::SetProxy(value) => {
                 let value = value.trim().to_owned();
                 if value == self.settings.proxy {
@@ -6775,6 +6788,12 @@ mod tests {
                 Command::SetDownloadFolder(Some(ref chosen)) if *chosen == folder
             )),
             "the hidden account downloads there too"
+        );
+        app.apply(Action::SetKeepChatsArchived(false), &ctx);
+        assert!(
+            std::iter::from_fn(|| commands.try_recv().ok())
+                .any(|command| matches!(command, Command::SetKeepChatsArchived(false))),
+            "the hidden account unarchives on new messages too"
         );
     }
 

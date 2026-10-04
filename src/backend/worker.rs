@@ -517,6 +517,7 @@ pub async fn run(
         group_info_retry: Vec::new(),
         presence_subscribed: HashSet::new(),
         download_folder: None,
+        keep_chats_archived: true,
         online_wanted: false,
         online_changed: Instant::now(),
         online_sent: None,
@@ -817,6 +818,9 @@ struct Worker {
     presence_subscribed: HashSet<String>,
     /// Chosen folder for new downloads, when not the cache.
     download_folder: Option<PathBuf>,
+    /// Settings' "Keep chats archived". Off, a new message unarchives its
+    /// chat here, as the phone does; WhatsApp sends no mutation for it.
+    keep_chats_archived: bool,
     /// Whether the window is focused and visible.
     online_wanted: bool,
     /// When `online_wanted` last changed.
@@ -3718,6 +3722,17 @@ impl Worker {
         if poll_baseline && let Err(error) = self.archive.mark_poll_history(&chat, &message.id) {
             log::warn!("could not store a live poll baseline: {error}");
         }
+        // History is filed elsewhere, so this is a live message, ours or
+        // theirs. A duplicate delivery or one older than the archiving does
+        // not bring the chat back.
+        if is_new
+            && !self.keep_chats_archived
+            && let Err(error) = self
+                .archive
+                .unarchive_for_message(&chat, message.timestamp.saturating_mul(1000))
+        {
+            log::warn!("could not unarchive a chat: {error}");
+        }
         // The phone may have read it, and reacted, before it reached us.
         let read_on_phone = self.settle_early_events(&chat, &message.id);
         let unread = is_new
@@ -4645,6 +4660,7 @@ impl Worker {
                 }
                 self.download_folder = folder;
             }
+            Command::SetKeepChatsArchived(keep) => self.keep_chats_archived = keep,
             Command::SetChatSound { chat, sound } => {
                 let _ = self.archive.set_notification_sound(&chat, sound.as_ref());
                 self.emit_chat(&chat);
@@ -11703,6 +11719,7 @@ mod receipt_tests {
             group_info_retry: Vec::new(),
             presence_subscribed: HashSet::new(),
             download_folder: None,
+            keep_chats_archived: true,
             online_wanted: false,
             online_changed: Instant::now(),
             online_sent: None,
@@ -12958,6 +12975,39 @@ mod receipt_tests {
         unarchived.chats[0].archived = Some(false);
         worker.apply_history(unarchived, true);
         assert!(!worker.archive.chat(PEER).unwrap().unwrap().archived);
+    }
+
+    #[tokio::test]
+    async fn new_messages_unarchive_only_when_chats_are_not_kept_archived() {
+        let (mut worker, _events, _inbox, _wa) = worker();
+        let archived = |worker: &Worker| worker.archive.chat(PEER).unwrap().unwrap().archived;
+        worker.store_message(incoming("before", 100), None, None);
+        worker.archive.set_archived_at(PEER, true, 200_000).unwrap();
+        // Kept archived, the default, as ZapFast always behaved.
+        worker.store_message(incoming("kept", 300), None, None);
+        assert!(archived(&worker));
+
+        worker
+            .handle_command(Command::SetKeepChatsArchived(false))
+            .await;
+        // A late delivery from before the archiving leaves it there, and so
+        // does a duplicate of a message filed while it was kept.
+        worker.store_message(incoming("late", 150), None, None);
+        worker.store_message(incoming("kept", 300), None, None);
+        assert!(archived(&worker));
+        worker.store_message(incoming("new", 400), None, None);
+        assert!(!archived(&worker));
+
+        // An app-state archive after that message still applies, and our own
+        // message sent later brings the chat back again.
+        worker.archive.set_archived_at(PEER, true, 500_000).unwrap();
+        assert!(archived(&worker));
+        worker.store_message(own_message("reply", 600), None, None);
+        assert!(!archived(&worker));
+        let mut stale = history(0);
+        stale.chats[0].archived = Some(true);
+        worker.apply_history(stale, true);
+        assert!(!archived(&worker), "history cannot undo it");
     }
 
     #[test]
