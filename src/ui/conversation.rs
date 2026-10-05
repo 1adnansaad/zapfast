@@ -1354,7 +1354,7 @@ const COMPOSER_RADIUS: u8 = 24;
 /// Padding around the text of a one-line composer row. The row, and the send
 /// and record button, are one text line plus this; the controls are centred
 /// on it.
-const COMPOSER_PADDING: f32 = 14.0;
+const COMPOSER_PADDING: f32 = 24.0;
 /// Height of the plus and emoji buttons: a row is never shorter, or they
 /// would stretch it and pull the text off its centre.
 const COMPOSER_CONTROL: f32 = 36.0;

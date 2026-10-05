@@ -9906,7 +9906,7 @@ mod tests {
         app.attach(&ctx);
         render(&mut app, &ctx);
         let (pill, text, controls) = measure(&mut app, &ctx);
-        // One line is 40pt tall; three clearly outgrow it.
+        // One line is under 50pt tall; three clearly outgrow it.
         assert!(pill.height() > 70.0, "the field grew: {pill:?}");
         let line = text.height() / 3.0;
         let last = text.bottom() - line / 2.0;
