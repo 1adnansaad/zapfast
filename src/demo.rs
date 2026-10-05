@@ -14791,6 +14791,21 @@ mod tests {
         render(&mut app, &ctx);
         app.composer = "unsent draft".into();
         let picture = preview_frame(&mut app, &ctx, vec![]);
+        // Fork (FORK.md, roomier message input): the composer's send button
+        // is a circle about as big as the arrows, drawn behind the preview in
+        // every frame, so it is found once with the arrows hidden and left out.
+        let behind = controls(&frame_sized(
+            &mut app,
+            &ctx,
+            780.0,
+            vec![egui::Event::PointerGone],
+        ));
+        let controls = |shapes: &[egui::epaint::ClippedShape]| -> Vec<egui::Rect> {
+            controls(shapes)
+                .into_iter()
+                .filter(|rect| !behind.contains(rect))
+                .collect()
+        };
         let initial = app
             .image_preview
             .as_ref()
@@ -22433,7 +22448,7 @@ mod tests {
         app.attach(&ctx);
         render(&mut app, &ctx);
         let (pill, text, controls) = measure(&mut app, &ctx);
-        // One line is 40pt tall; three clearly outgrow it.
+        // One line is under 50pt tall; three clearly outgrow it.
         assert!(pill.height() > 70.0, "the field grew: {pill:?}");
         let line = text.height() / 3.0;
         let last = text.bottom() - line / 2.0;

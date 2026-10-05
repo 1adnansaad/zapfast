@@ -31,6 +31,17 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   so other languages show it untranslated; the `.po` catalogs are left alone
   on purpose (upstream rewrites them often).
 
+### Roomier message input
+
+- **What:** `COMPOSER_PADDING` is 24 instead of 14, so a one-line message
+  field is about 43pt tall on Windows instead of 36 (the 36pt
+  `COMPOSER_CONTROL` floor used to win). The send and record buttons and the
+  recording strip grow with it.
+- **Why:** more breathing room around the text being typed.
+- **Files:** `src/ui/conversation.rs` (the constant), `src/demo.rs` (a test
+  comment that stated the old 40pt height).
+- **Cost:** the message list is about 7pt shorter.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream
