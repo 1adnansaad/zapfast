@@ -16,6 +16,21 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
 
 ## Changes
 
+### Ctrl+0 opens the search
+
+- **What:** Ctrl+0 (Cmd+0 on macOS) focuses the chat and message search,
+  like Ctrl+K. Upstream binds it to reset zoom.
+- **Why:** a one-hand key for search next to Ctrl+1 to Ctrl+9.
+- **Files:** `src/ui/keys.rs` (binding, `SHORTCUTS` row, and upstream's test
+  `numbered_shortcuts_do_not_wrap_missing_positions_and_zero_searches`),
+  `src/macos.rs` (Actual Size menu item loses Cmd+0, and its accelerator
+  test), `src/ui/settings.rs` (Zoom hint no longer mentions Ctrl+0),
+  `docs/_guide/using-zapfast.md`, `docs/_reference/settings-and-files.md`.
+- **Cost:** reset zoom has no shortcut; step back to 100% with Ctrl+Plus and
+  Ctrl+Minus or the Settings buttons. The Zoom hint is a new English string,
+  so other languages show it untranslated; the `.po` catalogs are left alone
+  on purpose (upstream rewrites them often).
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream

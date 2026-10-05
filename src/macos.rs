@@ -84,7 +84,8 @@ fn build_menu() -> tray_icon::menu::Result<Menu> {
         &Native::separator(),
         &item("zoom-in", "Zoom In", Some("Super+Equal")),
         &item("zoom-out", "Zoom Out", Some("Super+Minus")),
-        &item("zoom-reset", "Actual Size", Some("Super+Digit0")),
+        // Cmd+0 searches chats and messages, so Actual Size has no key.
+        &item("zoom-reset", "Actual Size", None),
         &Native::separator(),
         &Native::fullscreen(None),
     ])?;
@@ -310,7 +311,6 @@ mod tests {
             "Super+KeyN",
             "Super+Comma",
             "Super+Equal",
-            "Super+Digit0",
             "Super+Shift+KeyZ",
         ] {
             shortcut
