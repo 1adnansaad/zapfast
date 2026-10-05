@@ -117,7 +117,7 @@ pub fn handle(app: &mut App, ctx: &egui::Context) {
         key(Modifiers::COMMAND, Key::Plus, Action::ZoomBy(0.1));
         key(Modifiers::COMMAND, Key::Equals, Action::ZoomBy(0.1));
         key(Modifiers::COMMAND, Key::Minus, Action::ZoomBy(-0.1));
-        key(Modifiers::COMMAND, Key::Num0, Action::ResetZoom);
+        key(Modifiers::COMMAND, Key::Num0, Action::FocusSearch);
         if jump_allowed {
             key(Modifiers::COMMAND, Key::End, Action::ScrollToBottom);
         }
@@ -1132,7 +1132,7 @@ pub const SHORTCUTS: &[(&str, &str)] = &[
     ),
     ("Ctrl+,", "Settings"),
     ("Ctrl++ / Ctrl+-", "Zoom in / out"),
-    ("Ctrl+0", "Reset zoom"),
+    ("Ctrl+0", "Search chats and messages"),
     ("← / →", "Previous / next item in the media viewer"),
     ("? / Ctrl+/", "Keyboard shortcuts (? when not typing)"),
     ("Ctrl+Shift+L", "Lock ZapFast (with an app lock password)"),
@@ -2232,7 +2232,7 @@ mod tests {
     }
 
     #[test]
-    fn numbered_shortcuts_do_not_wrap_missing_positions_or_change_zero_zoom() {
+    fn numbered_shortcuts_do_not_wrap_missing_positions_and_zero_searches() {
         let (_root, mut app, ids) = app_with_chats(2);
         let ctx = egui::Context::default();
         app.open_chat = Some(ids[0].clone());
@@ -2245,7 +2245,7 @@ mod tests {
         press(&mut app, &ctx, Key::Num1, Modifiers::COMMAND);
         assert!(app.actions.is_empty());
         press(&mut app, &ctx, Key::Num0, Modifiers::COMMAND);
-        assert_eq!(app.actions, [Action::ResetZoom]);
+        assert_eq!(app.actions, [Action::FocusSearch]);
     }
 
     #[test]

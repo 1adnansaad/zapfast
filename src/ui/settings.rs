@@ -377,7 +377,7 @@ fn sections(app: &App) -> Vec<Section> {
         translated(locale, "Zoom"),
         keyed(translated(
             locale,
-            "Ctrl+Plus and Ctrl+Minus work anywhere, and Ctrl+0 resets it.",
+            "Ctrl+Plus and Ctrl+Minus work anywhere.",
         )),
         move |ui, app| {
             if theme::icon_button(

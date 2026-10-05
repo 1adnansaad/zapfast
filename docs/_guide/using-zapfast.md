@@ -741,7 +741,8 @@ the name, in order, so `will shak` finds William Shakespeare. Use `↑`/`↓` to
 Click a message result to jump to it, or a contact to start a chat. Use
 `Alt+↑/↓`, or `Ctrl+Shift+[` and `Ctrl+Shift+]` as in WhatsApp, to switch chats
 without leaving the composer (Command instead of Ctrl on macOS), and
-`Ctrl+1` through `Ctrl+9` to open the chat at that position in the list. Within an open
+`Ctrl+1` through `Ctrl+9` to open the chat at that position in the list.
+`Ctrl+0` opens the search bar. Within an open
 chat, `PgUp`/`PgDn` scroll by about a page, and `Home`/`End` (or `Ctrl+End`)
 jump to the top or the newest message when the input is empty. With text in
 the input, they move the text cursor as in any editor.

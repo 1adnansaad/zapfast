@@ -136,7 +136,7 @@ name or description, in the interface language or in English.
   theme replaces the window while keeping the current chat and connection.
 - **Wallpaper**: WhatsApp's light and dark chat wallpaper colours, with or
   without doodles.
-- **Zoom**: interface scale, also `Ctrl+Plus`, `Ctrl+Minus` and `Ctrl+0`.
+- **Zoom**: interface scale, also `Ctrl+Plus` and `Ctrl+Minus`.
 - **Language**: the interface language, or **Auto** to follow the system.
   Brazilian Portuguese, German, Spanish, Italian, French, Russian, Simplified
   Chinese, Traditional Chinese, Turkish, Indonesian, and Dutch are available; otherwise English.
