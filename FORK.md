@@ -42,6 +42,24 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   comment that stated the old 40pt height).
 - **Cost:** the message list is about 7pt shorter.
 
+### Own icon from a gitignored `branding/` folder
+
+- **What:** `branding/icon.svg` (and optionally `icon-small.svg`,
+  `icon.ico`) replaces the app icon: window, taskbar, tray, the in-app logo,
+  and the exe's icon, which `build.rs` draws from the SVG at 16 to 256px.
+  Without those files upstream's icon is the placeholder. Only
+  `branding/README.md` is tracked.
+- **Why:** a personal icon that never enters git, and upstream icon updates
+  still arrive for the placeholder.
+- **Files:** `build.rs` (picks the files, exports `ZAPFAST_ICON_SVG` and
+  `ZAPFAST_ICON_SMALL_SVG`, writes `OUT_DIR/icon.ico`), `src/util.rs`
+  (`MARK`/`SMALL_MARK` read those variables), `Cargo.toml` (resvg as a
+  Windows build-dependency), `.gitignore`, `branding/README.md`.
+- **Cost:** macOS (`packaging/macos/icon-1024.*`, the menu-bar template,
+  which assumes upstream's colours), the Windows installer and Linux packages
+  keep upstream's icon. Merge conflicts are likely only if upstream rewrites
+  `build.rs` or the `MARK` constants.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream

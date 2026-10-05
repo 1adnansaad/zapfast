@@ -14,3 +14,7 @@
 /packaging/flatpak/flatpak-cargo-generator.py
 /.flatpak-builder/
 /build-dir/
+
+# Fork: personal icon files stay out of git (branding/README.md, FORK.md).
+/branding/*
+!/branding/README.md
