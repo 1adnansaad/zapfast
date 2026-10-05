@@ -55,7 +55,10 @@ fn drawn_icon(svg: &std::path::Path) -> Option<PathBuf> {
 /// Writes an ICO holding the SVG at the sizes Windows asks for, each image
 /// stored as PNG, which Windows Vista and later read.
 #[cfg(windows)]
-fn write_icon(svg: &std::path::Path, out: &std::path::Path) -> Result<(), Box<dyn std::error::Error>> {
+fn write_icon(
+    svg: &std::path::Path,
+    out: &std::path::Path,
+) -> Result<(), Box<dyn std::error::Error>> {
     const SIDES: [u32; 7] = [16, 24, 32, 48, 64, 128, 256];
     let tree = resvg::usvg::Tree::from_data(&std::fs::read(svg)?, &Default::default())?;
     let mut images = Vec::new();
