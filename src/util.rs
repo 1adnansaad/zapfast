@@ -578,10 +578,11 @@ pub fn hue(seed: &str) -> f32 {
     (hash % 360) as f32
 }
 
-/// Embedded SVG app logo used across platform surfaces.
-const MARK: &[u8] = include_bytes!("../packaging/icons/zapfast.svg");
+/// Embedded SVG app logo used across platform surfaces: `branding/icon.svg`
+/// when this fork's checkout has one, upstream's mark otherwise (build.rs).
+const MARK: &[u8] = include_bytes!(env!("ZAPFAST_ICON_SVG"));
 /// The same mark without its rim and shading, which blur below this size.
-const SMALL_MARK: &[u8] = include_bytes!("../packaging/icons/zapfast-small.svg");
+const SMALL_MARK: &[u8] = include_bytes!(env!("ZAPFAST_ICON_SMALL_SVG"));
 const SMALL_BELOW: usize = 40;
 
 /// Rasterizes the logo to straight-alpha RGBA.

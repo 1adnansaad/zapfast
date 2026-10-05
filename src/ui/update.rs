@@ -142,6 +142,14 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                     }
                 }
             }
+            // Fork: whatever upstream offers here (download, restart to
+            // install), offer the merge prompt instead, so upstream's build
+            // never replaces this one (FORK.md).
+            let _upstream = action;
+            let action = Some((
+                "Copy merge prompt",
+                Action::CopyText(crate::updates::merge_prompt(&release)),
+            ));
             ui.add_space(16.0);
             ui.horizontal(|ui| {
                 ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
