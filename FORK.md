@@ -60,6 +60,23 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   keep upstream's icon. Merge conflicts are likely only if upstream rewrites
   `build.rs` or the `MARK` constants.
 
+### Updates copy a merge prompt instead of installing
+
+- **What:** the update dialog's one button is always "Copy merge prompt". It
+  copies `assets/fork-merge-prompt.md` with this checkout's path, the running
+  version and the release's version and URL filled in, asking an assistant to
+  rebase this fork onto the release tag while keeping what this file lists.
+  Upstream's Download and "Restart to update" buttons never appear.
+- **Why:** installing upstream's release would replace this build and drop
+  every change here.
+- **Files:** `src/updates.rs` (`merge_prompt` and its test),
+  `src/ui/update.rs` (sets upstream's chosen action aside just before the
+  button is drawn), `assets/fork-merge-prompt.md` (the wording; edit freely,
+  keeping the `{placeholders}`).
+- **Cost:** with Settings > "Download updates automatically" on, upstream's
+  update is still downloaded in the background, though nothing installs it:
+  keep that setting off.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream
