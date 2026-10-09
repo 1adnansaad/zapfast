@@ -18,7 +18,7 @@ pub mod chat_export;
 pub use calls::CALL_LOG_LIMIT;
 mod drafts;
 mod encryption;
-pub use encryption::{archive_key_identity, copy_archive_key, forget_archive_key};
+pub use encryption::{archive_key_identity, copy_archive_key, forget_archive_key, has_archive_key};
 mod favorites;
 pub use favorites::Favorite;
 mod labels;

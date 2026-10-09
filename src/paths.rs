@@ -19,7 +19,13 @@ pub struct AppDirs {
 }
 
 impl AppDirs {
+    /// Fork: the standard directories, moved where the user chose (FORK.md).
     pub fn discover() -> Self {
+        crate::data_folder::relocate(Self::standard())
+    }
+
+    /// The platform's standard directories.
+    pub fn standard() -> Self {
         match Self::of("zapfast") {
             Some(dirs) => dirs,
             None => {
