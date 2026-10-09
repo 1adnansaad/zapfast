@@ -1,7 +1,7 @@
 //! Compiles translations, picks the app icon, and embeds the icon and version
 //! information in Windows executables.
 
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 fn main() {
     fastframe_i18n::build::compile_catalogs("assets/i18n");
@@ -11,11 +11,12 @@ fn main() {
     println!("cargo:rerun-if-changed=branding");
     let root = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("set by Cargo"));
     let pick = |name: &str| Some(root.join("branding").join(name)).filter(|path| path.is_file());
-    let custom = pick("icon.svg");
+    let custom = pick("icon.svg").filter(|svg| draws(svg));
     let mark = custom
         .clone()
         .unwrap_or_else(|| root.join("packaging/icons/zapfast.svg"));
     let small = pick("icon-small.svg")
+        .filter(|svg| draws(svg))
         .or_else(|| custom.clone())
         .unwrap_or_else(|| root.join("packaging/icons/zapfast-small.svg"));
     println!("cargo:rustc-env=ZAPFAST_ICON_SVG={}", mark.display());
@@ -36,6 +37,33 @@ fn main() {
             println!("cargo:warning=Windows resources not embedded: {error}");
         }
     }
+}
+
+/// Whether a branding SVG draws anything. resvg is built without embedded
+/// bitmaps and text, so an SVG made only of those would be a blank icon;
+/// such a file is skipped with a warning and the placeholder stays.
+fn draws(svg: &Path) -> bool {
+    let drawn = std::fs::read(svg)
+        .ok()
+        .and_then(|data| resvg::usvg::Tree::from_data(&data, &Default::default()).ok())
+        .and_then(|tree| {
+            let mut pixmap = resvg::tiny_skia::Pixmap::new(64, 64)?;
+            let scale = 64.0 / tree.size().width();
+            resvg::render(
+                &tree,
+                resvg::tiny_skia::Transform::from_scale(scale, scale),
+                &mut pixmap.as_mut(),
+            );
+            Some(pixmap.pixels().iter().any(|pixel| pixel.alpha() > 0))
+        })
+        .unwrap_or(false);
+    if !drawn {
+        println!(
+            "cargo:warning={} draws nothing here (embedded bitmaps and text are not drawn), so ZapFast's icon stays; see branding/README.md",
+            svg.display()
+        );
+    }
+    drawn
 }
 
 /// Draws the branding SVG into an icon file for the executable, or warns and

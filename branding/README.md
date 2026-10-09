@@ -14,7 +14,12 @@ The SVG is drawn by resvg as ZapFast builds it, so it must:
 
 - be square (its width sets the scale);
 - use shapes and paths only: text must be converted to paths, and embedded
-  raster images are not drawn.
+  raster images are not drawn. Design tools often wrap a bitmap layer in an
+  `<image>`; export the vector layers instead (in Affinity, set the SVG
+  export's rasterise option to Nothing).
+
+If the SVG draws nothing, the build says so (`icon.svg draws nothing here`)
+and keeps ZapFast's icon rather than showing a blank one.
 
 After adding or changing a file, rebuild (`cargo build --release --locked`);
 the build notices the change by itself. macOS and Linux packaging keep

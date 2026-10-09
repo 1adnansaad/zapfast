@@ -223,8 +223,6 @@ windows = { version = "0.62", features = ["Media_Control", "Foundation_Collectio
 # The icon and version information Windows shows for the executable.
 [target.'cfg(windows)'.build-dependencies]
 winresource = "0.1"
-# Fork: draws branding/icon.svg into the exe's icon (FORK.md).
-resvg = { version = "0.45", default-features = false }
 
 [dev-dependencies]
 tempfile = "3"
@@ -262,3 +260,5 @@ opt-level = 2
 # Compiles the PO catalogs to Rust, leaving out unfinished entries. Ordinary
 # builds do not need gettext tools.
 fastframe-i18n = { git = "https://github.com/crmne/fastframe", tag = "v0.4.1", features = ["build"] }
+# Fork: checks branding/icon.svg draws, and draws it into the exe's icon (FORK.md).
+resvg = { version = "0.45", default-features = false }
