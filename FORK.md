@@ -51,10 +51,12 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   `branding/README.md` is tracked.
 - **Why:** a personal icon that never enters git, and upstream icon updates
   still arrive for the placeholder.
-- **Files:** `build.rs` (picks the files, exports `ZAPFAST_ICON_SVG` and
-  `ZAPFAST_ICON_SMALL_SVG`, writes `OUT_DIR/icon.ico`), `src/util.rs`
-  (`MARK`/`SMALL_MARK` read those variables), `Cargo.toml` (resvg as a
-  Windows build-dependency), `.gitignore`, `branding/README.md`.
+- **Files:** `build.rs` (picks the files, skips with a warning an SVG that
+  draws nothing, such as one wrapping a bitmap, exports `ZAPFAST_ICON_SVG`
+  and `ZAPFAST_ICON_SMALL_SVG`, writes `OUT_DIR/icon.ico`), `src/util.rs`
+  (`MARK`/`SMALL_MARK` read those variables; unit tests keep upstream's mark,
+  whose shape they check), `Cargo.toml` (resvg as a build-dependency),
+  `.gitignore`, `branding/README.md`.
 - **Cost:** macOS (`packaging/macos/icon-1024.*`, the menu-bar template,
   which assumes upstream's colours), the Windows installer and Linux packages
   keep upstream's icon. Merge conflicts are likely only if upstream rewrites
