@@ -82,6 +82,45 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   update is still downloaded in the background, though nothing installs it:
   keep that setting off.
 
+### Choose the data folder
+
+- **What:** a data folder is a whole profile (`config` with settings, the
+  account list and themes; `state`; `cache`), as `AppDirs::under` lays it
+  out. A fresh install asks before its window opens: "Standard location" or a
+  folder. Later, Settings > Files > Data folder > Change… (or Use default) and
+  a line on the link screen leave a choice for the next start. An empty folder
+  receives the current data (archive keys copied to the new paths and read
+  back, folders renamed or, across drives, copied, checked and removed); a
+  folder already holding ZapFast data is used as it is, and the current data
+  stays where it was; anything else is refused. A folder whose archives have
+  no key in this computer's keyring (copied by hand or from another computer)
+  is refused too, as its history could not be read. A linked folder needs no
+  new link. Changes run in `main.rs` while this copy holds the instance guard
+  and before anything opens a file, and nothing changes if a step fails.
+  `<standard config>.folder` (e.g. `%APPDATA%\paolino\zapfast\config.folder`)
+  records the folder, `.move` beside it a pending change; the runtime lock
+  stays at the standard place. `zapfast.lock` in the state folder keeps a
+  second copy off a folder in use. `ZAPFAST_DATA_DIR` puts everything,
+  runtime included, under one folder, so a dev build runs beside the daily
+  copy with its own data.
+- **Why:** keep the data where I choose, carry on from a folder set up earlier
+  without linking again, and test builds without touching the real archive.
+- **Files:** `src/data_folder.rs` (new: all logic and tests), `src/paths.rs`
+  (`discover` = `relocate(standard())`), `src/main.rs` (first-launch choice,
+  pending change, lock, toast), `src/lib.rs`, `src/archive/encryption.rs` and
+  `src/archive.rs` (`has_archive_key`, a read-only keyring check),
+  `src/model.rs` (`PickDataFolder`, `ChangeDataFolder`,
+  `CancelDataFolderChange`), `src/backend.rs` (`Command::PickDataFolder`,
+  `Event::DataFolderPicked`), `src/backend/worker.rs` (the folder picker),
+  `src/app.rs` (the actions and event), `src/ui/settings.rs` (the row),
+  `src/ui/login.rs` (the link-screen line),
+  `docs/_reference/settings-and-files.md`.
+- **Cost:** English-only labels. A change needs a restart (quit and reopen).
+  Old keyring entries are kept, so a backup restored to the old place still
+  opens. A chosen folder on a drive that is missing at start fails the start
+  until it is back or `config.folder` is removed. An upstream build would not
+  read `config.folder` and would start from the standard place.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream

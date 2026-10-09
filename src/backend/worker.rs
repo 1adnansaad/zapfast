@@ -4791,6 +4791,19 @@ impl Worker {
                     }
                 });
             }
+            Command::PickDataFolder => {
+                let events = self.events.clone();
+                let waker = self.waker.clone();
+                tokio::task::spawn_blocking(move || {
+                    if let Some(path) = rfd::FileDialog::new()
+                        .set_title("Choose where ZapFast keeps its data")
+                        .pick_folder()
+                    {
+                        let _ = events.send(Event::DataFolderPicked(path));
+                        waker.wake();
+                    }
+                });
+            }
             Command::PickWallpaperImage => {
                 let dirs = self.dirs.clone();
                 let events = self.events.clone();

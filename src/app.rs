@@ -2778,6 +2778,11 @@ impl App {
                     self.actions.push(Action::SetDownloadFolder(Some(path)));
                 }
             }
+            Event::DataFolderPicked(path) => {
+                if live {
+                    self.actions.push(Action::ChangeDataFolder(Some(path)));
+                }
+            }
             Event::WallpaperImagePicked(Ok(path)) => {
                 // The copy may keep the earlier one's name: decode it anew.
                 self.account_mut().settings.wallpaper_image = Some(path);
@@ -5473,6 +5478,21 @@ impl App {
             }
             Action::PreviewSound(sound) => crate::notify::play_sound(sound),
             Action::PickDownloadFolder => self.backend.send(Command::PickDownloadFolder),
+            // Fork: the change itself happens at the next start (FORK.md).
+            Action::PickDataFolder => self.backend.send(Command::PickDataFolder),
+            Action::ChangeDataFolder(folder) => {
+                match crate::data_folder::request_change(&self.dirs, folder.as_deref()) {
+                    Ok(message) => self.toast(message),
+                    Err(error) => {
+                        self.toast_error(format!("ZapFast cannot use that folder: {error}"))
+                    }
+                }
+            }
+            Action::CancelDataFolderChange => {
+                if let Err(error) = crate::data_folder::cancel_change() {
+                    self.toast_error(format!("Could not cancel the change: {error}"));
+                }
+            }
             Action::SetProfile { name, about } => {
                 self.backend.send(Command::SetProfile { name, about });
             }

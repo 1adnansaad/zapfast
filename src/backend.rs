@@ -406,6 +406,8 @@ pub enum Command {
     PickChatSound(ChatId),
     /// Asks for a folder for new downloads.
     PickDownloadFolder,
+    /// Fork: asks for a folder to move ZapFast's data into.
+    PickDataFolder,
     /// Asks for a wallpaper image and copies it into the state directory.
     PickWallpaperImage,
     /// Deletes the copied wallpaper image.
@@ -910,6 +912,8 @@ pub enum Event {
     },
     /// A folder chosen for new downloads.
     DownloadFolderPicked(std::path::PathBuf),
+    /// Fork: a folder chosen for ZapFast's data.
+    DataFolderPicked(std::path::PathBuf),
     /// The copy of a chosen wallpaper image, or why it could not be used.
     WallpaperImagePicked(Result<std::path::PathBuf, String>),
     /// An audio file chosen as a notification sound.

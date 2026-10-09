@@ -120,6 +120,23 @@ pub fn forget_archive_key(identity: &str) -> Result<()> {
     }
 }
 
+/// Fork: whether this computer's keyring holds the key of the archive at
+/// `path`, without creating one. A plaintext or absent archive needs none.
+pub fn has_archive_key(path: &Path) -> Result<bool> {
+    if plaintext(path)? {
+        return Ok(true);
+    }
+    let parent = path.parent().context("Archive has no parent directory")?;
+    let entry = platform_store()?
+        .build("rocks.zapfast.ZapFast", &identity_for(parent)?, None)
+        .map_err(keyring_error)?;
+    match entry.get_secret() {
+        Ok(secret) => Ok(Zeroizing::new(secret).len() == 32),
+        Err(keyring_core::Error::NoEntry) => Ok(false),
+        Err(error) => Err(keyring_error(error)),
+    }
+}
+
 /// The keyring identity of the archive at `path`, while its folder exists.
 pub fn archive_key_identity(path: &Path) -> Result<String> {
     identity_for(path.parent().context("Archive has no parent directory")?)

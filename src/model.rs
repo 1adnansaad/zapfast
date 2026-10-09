@@ -1699,6 +1699,14 @@ pub enum Action {
     PickChatSound(ChatId),
     /// Asks for a folder for new downloads.
     PickDownloadFolder,
+    /// Fork: asks for a folder for ZapFast's data (FORK.md).
+    PickDataFolder,
+    /// Fork: keeps ZapFast's data in a folder, or (`None`) the standard
+    /// place, from the next start: an empty one receives it, one with
+    /// ZapFast data is used instead.
+    ChangeDataFolder(Option<PathBuf>),
+    /// Fork: forgets a data folder change that has not happened yet.
+    CancelDataFolderChange,
     /// Changes our display name and About text; `None` keeps the current one.
     SetProfile {
         name: Option<String>,

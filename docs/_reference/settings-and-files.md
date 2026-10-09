@@ -37,6 +37,22 @@ On macOS, settings, state, and the logs are in
 `%LOCALAPPDATA%\paolino\zapfast\data`, and the caches in
 `%LOCALAPPDATA%\paolino\zapfast\cache`.
 
+You can keep everything in a folder of your own instead, as `config`, `state`
+and `cache` inside it. On a fresh install ZapFast asks before its window opens;
+later, **Settings > Files > Data folder > Change…** or the line under the code
+on the link screen picks one, and the change happens the next time ZapFast
+starts, before anything opens. An empty folder receives your current data:
+each archive's key is copied to the new place first, then the folders are
+renamed (or, on another drive, copied, checked, and removed), and nothing
+changes if any step fails. A folder that already holds ZapFast data is used as
+it is, linked account included, and the current data stays where it was. A
+folder copied by hand or from another computer is refused, because this
+computer's keyring has no key for its archive. **Use default** returns to the
+standard place. The choice is recorded in `config.folder` beside the standard
+`config` folder, and only one copy of ZapFast can use a data folder at a time.
+For development, the `ZAPFAST_DATA_DIR` environment variable puts everything
+under one folder, so a second copy can run with its own data.
+
 On first start, ZapFast moves the corresponding `fastsapp` directories (or
 `fastwhatsapp` from earlier versions), including the session, archive, saved
 stickers, and window state. Existing ZapFast directories are never overwritten.
@@ -155,7 +171,8 @@ name or description, in the interface language or in English.
 
 **Account** edits your WhatsApp name, About, and picture, and unlinks this
 computer. **Files** shows the archive, the downloads folder (which you can
-change; earlier downloads stay where they are), and this run's log.
+change; earlier downloads stay where they are), the data folder (which you can
+change, moving your data or using a folder set up earlier), and this run's log.
 
 Some choices are made where they are used and remembered in `settings.json`:
 the shortcut hints bar under the composer (its × hides it, and **Show shortcut

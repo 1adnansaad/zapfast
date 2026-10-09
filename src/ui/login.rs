@@ -138,6 +138,7 @@ fn body(app: &mut App, ui: &mut egui::Ui) {
         }
     }
     super::accounts::login_choices(app, ui);
+    data_folder(app, ui);
     ui.add_space(18.0);
     theme::paragraph(
         ui,
@@ -145,6 +146,32 @@ fn body(app: &mut App, ui: &mut egui::Ui) {
         theme::regular(11.5),
         palette.dim,
     );
+}
+
+/// Fork: where the data lives, changeable before linking: a folder that
+/// already holds a linked ZapFast needs no new link (FORK.md).
+fn data_folder(app: &mut App, ui: &mut egui::Ui) {
+    let palette = app.palette;
+    let here = app.dirs.state.parent().unwrap_or(&app.dirs.state);
+    let pending = crate::data_folder::pending_change();
+    ui.add_space(12.0);
+    theme::paragraph(
+        ui,
+        format!(
+            "Data folder: {}",
+            crate::data_folder::describe(here, pending.as_ref())
+        ),
+        theme::regular(12.0),
+        palette.secondary,
+    );
+    let (label, action) = if pending.is_some() {
+        ("Cancel change", Action::CancelDataFolderChange)
+    } else {
+        ("Change data folder…", Action::PickDataFolder)
+    };
+    if theme::pill_button(ui, &palette, label, false).clicked() {
+        app.actions.push(action);
+    }
 }
 
 pub(super) fn busy(ui: &mut egui::Ui, color: egui::Color32, label: &str) {

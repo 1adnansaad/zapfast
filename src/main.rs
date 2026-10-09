@@ -186,6 +186,15 @@ fn run() -> eframe::Result<()> {
         }
     };
     let default_filter = default_log_filter(cli.verbose);
+    // Fork: choose the data folder on a fresh install, or make a change asked
+    // for earlier, while this copy holds the instance guard and nothing has
+    // the files open (FORK.md).
+    let (discovered, data_move) = if demo {
+        (discovered, None)
+    } else {
+        let discovered = zapfast::data_folder::ask_on_first_launch(discovered);
+        zapfast::data_folder::finish_pending_change(discovered)
+    };
     // A demo must not create empty ZapFast directories that would prevent a
     // later real launch from adopting the existing FastsApp session.
     let dirs = if demo {
@@ -205,6 +214,15 @@ fn run() -> eframe::Result<()> {
     // directories have been created and secured successfully.
     dirs.ensure()
         .map_err(|error| eframe::Error::AppCreation(error.into()))?;
+    // Fork: one copy per data folder, whatever led each to it (FORK.md).
+    let _data_lock = if demo {
+        None
+    } else {
+        Some(
+            zapfast::data_folder::lock(&dirs)
+                .map_err(|error| eframe::Error::AppCreation(error.into()))?,
+        )
+    };
     let logging = fastframe_log::Logging::new("zapfast", env!("CARGO_PKG_VERSION"))
         .filter(default_filter)
         .panic_log(dirs.panic_log())
@@ -240,6 +258,14 @@ fn run() -> eframe::Result<()> {
     }
     if let Some(error) = launch.error {
         app.toast_error(error);
+    }
+    match data_move {
+        Some(Ok(message)) => app.toast(message),
+        Some(Err(error)) => {
+            log::error!("{error}");
+            app.toast_error(error);
+        }
+        None => {}
     }
     if let Some(guard) = &instance {
         app.set_remote_control(guard);

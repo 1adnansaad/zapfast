@@ -761,6 +761,55 @@ fn sections(app: &App) -> Vec<Section> {
             }
         },
     );
+    // Fork: where the data lives, and changing it at the next start (FORK.md).
+    let data = app
+        .dirs
+        .state
+        .parent()
+        .unwrap_or(&app.dirs.state)
+        .to_path_buf();
+    let pending = crate::data_folder::pending_change();
+    let chosen = crate::data_folder::chosen_folder().is_some();
+    let shown = crate::data_folder::describe(&data, pending.as_ref());
+    files.row(translated(locale, "Data folder"), shown, {
+        let open_folder = crate::i18n::gettext(locale, "Open folder");
+        move |ui, app| {
+            if theme::soft_button(ui, &palette, Some(Icon::ExternalLink), &open_folder, false)
+                .clicked()
+            {
+                app.actions.push(Action::OpenFolder(data.clone()));
+            }
+            if pending.is_some() {
+                if theme::soft_button(ui, &palette, None, "Cancel change", false).clicked() {
+                    app.actions.push(Action::CancelDataFolderChange);
+                }
+                return;
+            }
+            if theme::soft_button(
+                ui,
+                &palette,
+                None,
+                &crate::i18n::gettext(app.locale, "Change…"),
+                false,
+            )
+            .clicked()
+            {
+                app.actions.push(Action::PickDataFolder);
+            }
+            if chosen
+                && theme::soft_button(
+                    ui,
+                    &palette,
+                    None,
+                    &crate::i18n::gettext(app.locale, "Use default"),
+                    false,
+                )
+                .clicked()
+            {
+                app.actions.push(Action::ChangeDataFolder(None));
+            }
+        }
+    });
     let log = app.dirs.log_file();
     files.row(
         translated(locale, "Log"),
