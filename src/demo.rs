@@ -8310,6 +8310,24 @@ mod tests {
         app.attach(&ctx);
         render(&mut app, &ctx);
         render(&mut app, &ctx);
+        // Fork: a pointer arriving shifts the rows; measure after it settles,
+        // or the press below lands beside the text it aims at (FORK.md).
+        for _ in 0..2 {
+            let input = egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(
+                    egui::Pos2::ZERO,
+                    egui::vec2(1180.0, 780.0),
+                )),
+                events: vec![egui::Event::PointerMoved(egui::pos2(640.0, 400.0))],
+                ..Default::default()
+            };
+            let mut output = ctx.run_ui(input, |ui| {
+                let ctx = ui.ctx().clone();
+                app.background_frame(&ctx);
+                app.frame_ui(ui);
+            });
+            output.textures_delta.clear();
+        }
         let body = |id: &str| {
             let key = crate::ui::conversation::bubble_id(&chat, id).with("body");
             ctx.data(|data| data.get_temp::<egui::Rect>(key))

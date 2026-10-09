@@ -39,7 +39,10 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   recording strip grow with it.
 - **Why:** more breathing room around the text being typed.
 - **Files:** `src/ui/conversation.rs` (the constant), `src/demo.rs` (a test
-  comment that stated the old 40pt height).
+  comment that stated the old 40pt height, and
+  `a_copy_across_messages_survives_rows_skipped_above`, which now lets the
+  rows settle under a pointer before measuring: a pointer arriving shifts
+  them, and with the taller input its press missed the text it aimed at).
 - **Cost:** the message list is about 7pt shorter.
 
 ### Own icon from a gitignored `branding/` folder
