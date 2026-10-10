@@ -20,6 +20,7 @@ On Linux:
 | Stickers and packs | `~/.local/state/zapfast/accounts/<id>/stickers/` | Plain WebP files; each pack is a folder |
 | Wallpaper image | `~/.local/state/zapfast/accounts/<id>/wallpaper.jpg` | Copy of the chosen picture (or `.png`, `.webp`, `.gif`) |
 | Attachments, avatars | `~/.cache/zapfast/accounts/<id>/` | Safe to delete; available files download again when viewed |
+| yt-dlp tab | `~/.cache/zapfast/yt-dlp/` | yt-dlp and ffmpeg when downloaded from the tab (ones on `PATH` are used first); thumbnails and fetched videos are in `accounts/<id>/yt-dlp/`, videos removed after a day |
 | Last run's log | `~/.local/state/zapfast/zapfast.log` | `--verbose` for more |
 | Crash log | `~/.local/state/zapfast/panic.log` | Safe to delete |
 

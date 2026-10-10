@@ -2728,6 +2728,31 @@ pub fn apply_flags(app: &mut App, page: Option<&str>) {
                     bad_key: true,
                 });
             }
+            // The yt-dlp tab with YouTube results, ffmpeg not yet installed.
+            "ytdlp" => {
+                app.picker = Some(crate::model::PickerTab::YtDlp);
+                app.ytdlp.tools = Some(crate::ytdlp::Tools {
+                    ytdlp: crate::ytdlp::Tool::Ready,
+                    ffmpeg: crate::ytdlp::Tool::Missing,
+                });
+                app.ytdlp.results = (0..4)
+                    .map(|index| crate::ytdlp::WebVideo {
+                        id: format!("demo{index}"),
+                        url: format!("https://www.youtube.com/watch?v=demo{index}"),
+                        title: format!("Sample video {}", index + 1),
+                        thumbnail: Some(sample_files(app).0),
+                        duration: Some(61 + index * 600),
+                    })
+                    .collect();
+            }
+            // The yt-dlp tab before yt-dlp is installed.
+            "ytdlp-missing" => {
+                app.picker = Some(crate::model::PickerTab::YtDlp);
+                app.ytdlp.tools = Some(crate::ytdlp::Tools {
+                    ytdlp: crate::ytdlp::Tool::Missing,
+                    ffmpeg: crate::ytdlp::Tool::Missing,
+                });
+            }
             // With "voice": the menu of a playable voice message, which
             // lists every playback speed.
             "voice-menu" => app.open_message_menu = Some("ada-voice".into()),
@@ -4338,6 +4363,8 @@ mod tests {
             "preview",
             "gifs",
             "gifs-badkey",
+            "ytdlp",
+            "ytdlp-missing",
             "react-menu",
             "react-picker",
             "react-picker-empty",

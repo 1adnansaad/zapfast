@@ -495,6 +495,8 @@ pub struct App {
     /// Whether a GIF search is active.
     pub gif_pending: bool,
     pub gif_error: Option<GifError>,
+    /// The yt-dlp tab: its site, results and tools.
+    pub ytdlp: crate::ytdlp::Picker,
     /// The list the sticker tab shows.
     pub sticker_shelf: StickerShelf,
     /// Text in the sticker search field.
@@ -1058,6 +1060,7 @@ impl App {
             gif_results: Vec::new(),
             gif_pending: false,
             gif_error: None,
+            ytdlp: Default::default(),
             sticker_shelf: StickerShelf::default(),
             sticker_search: String::new(),
             sticker_emojis: std::collections::HashMap::new(),
@@ -2649,6 +2652,22 @@ impl App {
                         Err(error) => {
                             self.gif_results.clear();
                             self.gif_error = Some(error);
+                        }
+                    }
+                }
+            }
+            Event::YtDlpTools(tools) => self.ytdlp.tools = Some(tools),
+            Event::WebVideos { query, results } => {
+                if query == self.ytdlp.query {
+                    self.ytdlp.pending = false;
+                    match results {
+                        Ok(results) => {
+                            self.ytdlp.results = results;
+                            self.ytdlp.error = None;
+                        }
+                        Err(error) => {
+                            self.ytdlp.results.clear();
+                            self.ytdlp.error = Some(error);
                         }
                     }
                 }
@@ -4714,6 +4733,14 @@ impl App {
                     if tab == PickerTab::Gifs && self.gif_results.is_empty() {
                         self.actions.push(Action::SearchGifs(String::new()));
                     }
+                    // Looks again each time, so a tool installed meanwhile
+                    // shows up; not while one is downloading.
+                    let installing = self.ytdlp.tools.as_ref().is_some_and(|tools| {
+                        [&tools.ytdlp, &tools.ffmpeg].contains(&&crate::ytdlp::Tool::Installing)
+                    });
+                    if tab == PickerTab::YtDlp && !installing {
+                        self.backend.send(Command::YtDlpTools { install: None });
+                    }
                 }
             }
             Action::ClosePicker => {
@@ -4942,6 +4969,42 @@ impl App {
                     self.toast("Sending GIF…");
                     let quoting = self.reply_to.take();
                     self.backend.send(Command::SendGif { chat, gif, quoting });
+                    self.picker = None;
+                    self.follow_outgoing();
+                    self.refocus_composer(ctx);
+                }
+            }
+            Action::SelectVideoSite(site) => {
+                self.picker_search.clear();
+                self.ytdlp = crate::ytdlp::Picker {
+                    site,
+                    tools: self.ytdlp.tools.take(),
+                    ..Default::default()
+                };
+            }
+            Action::FindWebVideos(query) => {
+                self.ytdlp.query = query.clone();
+                self.ytdlp.pending = true;
+                self.ytdlp.error = None;
+                self.backend.send(Command::FindWebVideos { query });
+            }
+            Action::InstallTool(kind) => {
+                if let Some(tools) = &mut self.ytdlp.tools {
+                    *tools.get_mut(kind) = crate::ytdlp::Tool::Installing;
+                }
+                self.backend.send(Command::YtDlpTools {
+                    install: Some(kind),
+                });
+            }
+            Action::SendWebVideo(video) => {
+                if let Some(chat) = self.open_chat.clone() {
+                    self.toast("Fetching the video…");
+                    let quoting = self.reply_to.take();
+                    self.backend.send(Command::SendWebVideo {
+                        chat,
+                        url: video.url,
+                        quoting,
+                    });
                     self.picker = None;
                     self.follow_outgoing();
                     self.refocus_composer(ctx);
@@ -9896,6 +9959,36 @@ mod tests {
         assert_eq!(
             app.drafts.get(chat).map(String::as_str),
             Some("Reply fixture")
+        );
+    }
+
+    #[test]
+    fn a_web_video_carries_the_reply_and_closes_the_picker() {
+        let root = tempfile::tempdir().unwrap();
+        let (mut app, _) = App::headless(AppDirs::under(root.path()), Settings::default());
+        let (backend, mut commands, _events) = Backend::recording_with_events();
+        app.backend = backend;
+        let ctx = egui::Context::default();
+        app.open_chat = Some("fixture@s.whatsapp.net".into());
+        app.reply_to = Some("original".into());
+        app.picker = Some(PickerTab::YtDlp);
+        let url = "https://example.invalid/watch";
+        app.apply(
+            Action::SendWebVideo(crate::ytdlp::WebVideo {
+                id: "Youtube-a1".into(),
+                url: url.into(),
+                title: String::new(),
+                thumbnail: None,
+                duration: None,
+            }),
+            &ctx,
+        );
+        assert!(app.reply_to.is_none());
+        assert!(app.picker.is_none());
+        assert!(
+            std::iter::from_fn(|| commands.try_recv().ok()).any(|command| matches!(command,
+                Command::SendWebVideo { url: sent, quoting: Some(id), .. }
+                    if id == "original" && sent == url))
         );
     }
 

@@ -688,6 +688,13 @@ fastframe_icons::icons! {
         VolumeX => lucide "volume-x",
         WifiOff => "wifi-off",
         X => lucide "x",
+        // The yt-dlp tab's sites.
+        Facebook => "facebook",
+        Instagram => "instagram",
+        Link => "link",
+        TikTok => "tiktok",
+        XLogo => "x-logo",
+        YouTube => "youtube",
     }
 }
 

@@ -985,6 +985,8 @@ pub enum PickerTab {
     Emoji,
     Gifs,
     Stickers,
+    /// Videos from YouTube, X and other sites, through yt-dlp.
+    YtDlp,
 }
 
 /// How the chat list is drawn. Hiding it can also just collapse it.
@@ -1582,6 +1584,14 @@ pub enum Action {
     /// Searches GIFs or lists trending results for an empty query.
     SearchGifs(String),
     SendGif(Gif),
+    /// Shows one site's tab in the yt-dlp picker.
+    SelectVideoSite(crate::ytdlp::VideoSite),
+    /// Searches YouTube, or reads a link, through yt-dlp.
+    FindWebVideos(String),
+    /// Downloads yt-dlp or ffmpeg, as the reader asked.
+    InstallTool(crate::ytdlp::ToolKind),
+    /// Fetches a video through yt-dlp and sends it to the open chat.
+    SendWebVideo(crate::ytdlp::WebVideo),
     React {
         chat: ChatId,
         message: String,

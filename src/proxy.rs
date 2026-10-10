@@ -107,6 +107,11 @@ impl Proxy {
     }
 
     /// The URL without its password, for logs and Settings.
+    /// The normalized URL, credentials included, for a tool that takes one.
+    pub fn url(&self) -> &str {
+        &self.url
+    }
+
     pub fn redacted(&self) -> String {
         match (&self.auth, self.url.split_once('@')) {
             (Some((user, _)), Some((_, rest))) => {

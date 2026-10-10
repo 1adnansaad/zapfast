@@ -350,6 +350,13 @@ impl AccountDirs {
         self.state.join("stickers")
     }
 
+    /// Downloaded yt-dlp and ffmpeg, shared by every account: `yt-dlp`
+    /// beside `accounts` in the cache folder.
+    pub fn tools_dir(&self) -> PathBuf {
+        let cache = self.cache.parent().and_then(Path::parent);
+        cache.unwrap_or(&self.cache).join("yt-dlp")
+    }
+
     /// ZapFast's copy of the chosen chat wallpaper image for this account.
     pub fn wallpaper_file(&self, extension: &str) -> PathBuf {
         self.state.join(format!("wallpaper.{extension}"))
