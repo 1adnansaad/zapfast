@@ -27,7 +27,7 @@ pub fn set(enabled: bool) -> io::Result<()> {
         return platform::remove();
     }
     let executable = executable()
-        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "cannot locate ZapFast"))?;
+        .ok_or_else(|| io::Error::new(io::ErrorKind::NotFound, "cannot locate WhatZap"))?;
     platform::install(&executable)
 }
 
@@ -72,8 +72,8 @@ mod platform {
         format!(
             "[Desktop Entry]\n\
              Type=Application\n\
-             Name=ZapFast\n\
-             Comment=Start ZapFast in the tray\n\
+             Name=WhatZap\n\
+             Comment=Start WhatZap in the tray\n\
              Exec={} {HIDDEN}\n\
              Icon=zapfast\n\
              Terminal=false\n\

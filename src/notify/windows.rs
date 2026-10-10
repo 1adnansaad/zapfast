@@ -20,7 +20,7 @@ fn register_identity() -> std::io::Result<()> {
         r"Software\Classes\AppUserModelId\{APPLICATION_ID}"
     ));
     let name = wide("DisplayName");
-    let value = wide("ZapFast");
+    let value = wide("WhatZap");
     let mut key = std::ptr::null_mut();
     // All buffers are NUL-terminated UTF-16 and remain alive during each call.
     let status = unsafe { RegCreateKeyW(HKEY_CURRENT_USER, path.as_ptr(), &mut key) };

@@ -1630,7 +1630,7 @@ impl Worker {
             // WhatsApp reads the linked-device name, version, and icon at pairing.
             .with_device_props(
                 DevicePropsOverride::new()
-                    .with_os("ZapFast")
+                    .with_os("WhatZap")
                     .with_version(app_version())
                     .with_platform_type(wa::device_props::PlatformType::DESKTOP),
             )
@@ -2467,7 +2467,7 @@ impl Worker {
             }
             E::ClientOutdated(_) => {
                 self.set_status(LinkStatus::Failed(
-                    "WhatsApp rejected this version of ZapFast. Update the app".to_owned(),
+                    "WhatsApp rejected this version of WhatZap. Update the app".to_owned(),
                 ));
             }
             E::Messages(batch) => {
@@ -4492,7 +4492,7 @@ impl Worker {
                     Err(_) => false,
                 };
             if !writable {
-                let error = "This conversation is read-only in ZapFast".to_owned();
+                let error = "This conversation is read-only in WhatZap".to_owned();
                 if matches!(&command, Command::CreatePoll { .. }) {
                     self.emit(Event::PollCreated {
                         chat: chat.clone(),
@@ -4796,7 +4796,7 @@ impl Worker {
                 let waker = self.waker.clone();
                 tokio::task::spawn_blocking(move || {
                     if let Some(path) = rfd::FileDialog::new()
-                        .set_title("Choose where ZapFast keeps its data")
+                        .set_title("Choose where WhatZap keeps its data")
                         .pick_folder()
                     {
                         let _ = events.send(Event::DataFolderPicked(path));
@@ -5262,7 +5262,7 @@ impl Worker {
                 let Some(client) = self.client.clone() else {
                     self.emit(Event::InvitePreview {
                         code,
-                        result: Err("ZapFast is not connected to WhatsApp".to_owned()),
+                        result: Err("WhatZap is not connected to WhatsApp".to_owned()),
                     });
                     return;
                 };
@@ -5291,7 +5291,7 @@ impl Worker {
                 let Some(client) = self.client.clone() else {
                     self.emit(Event::InviteJoined {
                         code,
-                        result: Err("ZapFast is not connected to WhatsApp".to_owned()),
+                        result: Err("WhatZap is not connected to WhatsApp".to_owned()),
                     });
                     return;
                 };
@@ -5578,7 +5578,7 @@ impl Worker {
                         // The phone has cleared it; say so rather than leave
                         // the messages here looking as if nothing happened.
                         self.emit(Event::Error(
-                            "The phone cleared this chat, but ZapFast could not clear it here"
+                            "The phone cleared this chat, but WhatZap could not clear it here"
                                 .to_owned(),
                         ));
                     }
@@ -7372,7 +7372,7 @@ impl Worker {
                 }
             }
             Err(_) => self.emit(Event::Error(
-                "WhatsApp accepted the deletion, but ZapFast could not remove its copy. Local cleanup is saved for restart or reconnect".to_owned(),
+                "WhatsApp accepted the deletion, but WhatZap could not remove its copy. Local cleanup is saved for restart or reconnect".to_owned(),
             )),
         }
     }

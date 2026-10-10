@@ -276,7 +276,7 @@ impl<T: std::io::Read + std::io::Seek + Send + Sync> ReadSeek for T {}
 /// name neither the chat nor the sender and carry none of the message.
 pub fn locked_lines(locale: crate::i18n::Locale) -> (String, String) {
     (
-        "ZapFast".to_owned(),
+        "WhatZap".to_owned(),
         crate::i18n::gettext(locale, "New message").into_owned(),
     )
 }
@@ -308,7 +308,7 @@ fn deliver(
     };
     let mut notification = notify_rust::Notification::new();
     notification
-        .appname("ZapFast")
+        .appname("WhatZap")
         .summary(title)
         .body(body)
         .icon("zapfast")
@@ -397,7 +397,7 @@ fn deliver(
         return;
     }
     let mut notification = notify_rust::Notification::new();
-    notification.appname("ZapFast").summary(title).body(body);
+    notification.appname("WhatZap").summary(title).body(body);
     #[cfg(target_os = "macos")]
     if system_sound {
         // The notification system's default sound; custom sounds are played
@@ -540,7 +540,7 @@ mod tests {
         let mut notifications = Notifications::default();
         notifications.show(
             "Ada Lovelace".into(),
-            "A test from ZapFast, with a picture".into(),
+            "A test from WhatZap, with a picture".into(),
             picture,
             NotificationSound::System,
             NotificationTarget {

@@ -150,9 +150,9 @@ fn run() -> eframe::Result<()> {
                 error.kind(),
                 ErrorKind::NotFound | ErrorKind::ConnectionRefused
             ) {
-                eprintln!("ZapFast is not running, so there are no themes to reload.");
+                eprintln!("WhatZap is not running, so there are no themes to reload.");
             } else {
-                eprintln!("Could not reach the running ZapFast: {error}");
+                eprintln!("Could not reach the running WhatZap: {error}");
             }
             std::process::exit(1);
         }
@@ -172,15 +172,17 @@ fn run() -> eframe::Result<()> {
         match single_instance::acquire(&discovered.runtime, &waker, verb) {
             single_instance::Outcome::Only(guard) => Some(guard),
             single_instance::Outcome::Surfaced if cli.start_hidden => {
-                eprintln!("ZapFast is already running");
+                eprintln!("WhatZap is already running");
                 return Ok(());
             }
             single_instance::Outcome::Surfaced => {
-                eprintln!("ZapFast or FastsApp is already running; asked it to show its window");
+                eprintln!(
+                    "WhatZap, ZapFast or FastsApp is already running; asked it to show its window"
+                );
                 return Ok(());
             }
             single_instance::Outcome::Unanswered => {
-                eprintln!("ZapFast is already running but did not answer");
+                eprintln!("WhatZap is already running but did not answer");
                 return Ok(());
             }
         }
@@ -370,14 +372,14 @@ fn is_graphics_failure(error: &eframe::Error) -> bool {
 #[cfg(any(windows, test))]
 fn startup_failure_text(graphics: bool, details: &str, log: &std::path::Path) -> String {
     let summary = if graphics {
-        "ZapFast could not start because the graphics driver does not offer \
-         OpenGL 2.1 or newer, which ZapFast needs to draw its window.\n\n\
+        "WhatZap could not start because the graphics driver does not offer \
+         OpenGL 2.1 or newer, which WhatZap needs to draw its window.\n\n\
          Install the current driver from the maker of the graphics chip \
          (Intel, AMD or NVIDIA). The Microsoft Basic Display Adapter, some \
          virtual machines and some remote desktop sessions offer no usable \
          OpenGL."
     } else {
-        "ZapFast could not start."
+        "WhatZap could not start."
     };
     format!(
         "{summary}\n\nDetails: {details}\n\nThe log may say more: {}",
@@ -400,7 +402,7 @@ fn startup_failure_dialog(error: &eframe::Error) {
         &paths::AppDirs::discover().log_file(),
     );
     let wide = |text: &str| text.encode_utf16().chain([0]).collect::<Vec<u16>>();
-    let (text, caption) = (wide(&text), wide("ZapFast"));
+    let (text, caption) = (wide(&text), wide("WhatZap"));
     // SAFETY: both strings are NUL-terminated and outlive the call.
     unsafe {
         MessageBoxW(
@@ -446,7 +448,7 @@ fn native_options(
     let default_size = demo_size_arg().unwrap_or([1180.0, 780.0]);
     let demo = demo_persistence.is_some();
     let viewport = egui::ViewportBuilder::default()
-        .with_title(if demo { "ZapFast Demo" } else { "ZapFast" })
+        .with_title(if demo { "WhatZap Demo" } else { "WhatZap" })
         .with_app_id(if demo {
             "zapfast-demo".to_owned()
         } else {
@@ -751,7 +753,7 @@ mod startup_failure_tests {
             "The directory is not writable",
             std::path::Path::new("zapfast.log"),
         );
-        assert!(text.starts_with("ZapFast could not start."));
+        assert!(text.starts_with("WhatZap could not start."));
         assert!(!text.contains("OpenGL"));
         assert!(text.contains("The directory is not writable"));
     }
