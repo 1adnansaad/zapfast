@@ -31,8 +31,8 @@ fn main() {
         let mut resource = winresource::WindowsResource::new();
         resource
             .set_icon(&icon.to_string_lossy())
-            .set("ProductName", "ZapFast")
-            .set("FileDescription", "ZapFast");
+            .set("ProductName", "WhatZap")
+            .set("FileDescription", "WhatZap");
         if let Err(error) = resource.compile() {
             println!("cargo:warning=Windows resources not embedded: {error}");
         }

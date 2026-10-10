@@ -146,6 +146,39 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
 - **Cost:** none. Kept at the end of the file because upstream edits
   `AGENTS.md` often, so a sync should only conflict if upstream appends too.
 
+### Named WhatZap, crediting ZapFast
+
+- **What:** the window title, tray, notifications (and the Windows toast
+  name), link screen, About, macOS menus, dialogs, messages and shortcut list
+  say WhatZap, as do the exe's product name, the pack name on stickers made
+  here, and the name the phone lists under Linked devices (WhatsApp reads it
+  only when linking, so it shows after the next link). With chats loaded, the
+  pane without an open chat says "A modified fork of ZapFast" instead of
+  "Select a chat on the left.", "ZapFast" linking to the original repository
+  (`CARGO_PKG_REPOSITORY`).
+- **Why:** this fork's own name, with credit to the project it comes from.
+- **Files:** user-visible strings in `src/main.rs`, `src/app.rs`,
+  `src/notify.rs`, `src/notify/windows.rs` (`DisplayName` only),
+  `src/macos.rs`, `src/autostart.rs` (Linux `Name=`/`Comment=`),
+  `src/data_folder.rs`, `src/paths.rs`, `src/archive/encryption.rs` (messages,
+  with their copies in `src/ui/login.rs`'s test), `src/backend/worker.rs`,
+  `src/backend/sticker_maker.rs`, `src/backend/sticker_store.rs`,
+  `src/backend/worker/interactive/replies.rs` and `src/ui/` (`conversation.rs`
+  also has `fork_line`), tests that quote them (`app.rs`, `main.rs`,
+  `demo.rs`), `build.rs` (`ProductName`, `FileDescription`).
+- **Kept as upstream on purpose:** every identifier, so the link, archive key
+  and data stay put: crate and exe `zapfast`, `run_native("ZapFast")`,
+  `app_id`, data folders, keyring service `rocks.zapfast.ZapFast`, AUMID,
+  autostart entry names, `ZAPFAST_*` variables, the update slug, the OGG
+  vendor tag. Update toasts, the update dialog and its settings say ZapFast
+  because they name upstream's release. `docs/`, `packaging/` and
+  `assets/i18n/` are untouched. After an upstream sync, rename any new
+  user-visible "ZapFast" string the same way.
+- **Cost:** translated strings that named ZapFast (lock screen, the labels
+  limit, read-only notes, locked-chat dialogs) are new msgids, so other
+  languages show them in English. Installers, the macOS bundle, Linux
+  packages and the docs site still say ZapFast.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream

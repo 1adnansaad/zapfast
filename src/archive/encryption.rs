@@ -31,7 +31,7 @@ pub(super) fn key_for(path: &Path) -> Result<Zeroizing<[u8; 32]>> {
     let entry = store
         .build("rocks.zapfast.ZapFast", &identity_for(parent)?, None)
         .map_err(keyring_error)
-        .context("The OS keyring could not open ZapFast's archive key")?;
+        .context("The OS keyring could not open WhatZap's archive key")?;
     key_from_entry(path, &entry)
 }
 
@@ -64,7 +64,7 @@ fn copy_archive_key_in(
     let old_entry = store
         .build("rocks.zapfast.ZapFast", &identity_for(old_parent)?, None)
         .map_err(keyring_error)
-        .context("The OS keyring could not open ZapFast's archive key")?;
+        .context("The OS keyring could not open WhatZap's archive key")?;
     let key = match old_entry.get_secret() {
         Ok(secret) => {
             ensure!(
@@ -83,13 +83,13 @@ fn copy_archive_key_in(
             return Ok(());
         }
         Err(error) => {
-            return Err(keyring_error(error)).context("Unlock your OS keyring and restart ZapFast");
+            return Err(keyring_error(error)).context("Unlock your OS keyring and restart WhatZap");
         }
     };
     let new_entry = store
         .build("rocks.zapfast.ZapFast", &identity_for(new_parent)?, None)
         .map_err(keyring_error)
-        .context("The OS keyring could not open ZapFast's archive key")?;
+        .context("The OS keyring could not open WhatZap's archive key")?;
     new_entry
         .set_secret(key.as_ref())
         .map_err(keyring_error)
@@ -164,7 +164,7 @@ fn platform_store() -> Result<std::sync::Arc<dyn CredentialStoreApi>> {
     let store = windows_native_keyring_store::Store::new();
     Ok(store
         .map_err(keyring_error)
-        .context("Unlock your OS keyring and restart ZapFast")?
+        .context("Unlock your OS keyring and restart WhatZap")?
         as std::sync::Arc<dyn CredentialStoreApi>)
 }
 
@@ -194,7 +194,7 @@ fn key_from_entry(path: &Path, entry: &keyring_core::Entry) -> Result<Zeroizing<
             create_key(entry)
         }
         Err(error) => {
-            Err(keyring_error(error)).context("Unlock your OS keyring and restart ZapFast")
+            Err(keyring_error(error)).context("Unlock your OS keyring and restart WhatZap")
         }
     }
 }

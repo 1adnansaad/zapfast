@@ -57,7 +57,7 @@ const SELECT_GUTTER: f32 = SELECT_BOX + 14.0;
 /// Footer label on an outgoing message that failed to send.
 const NOT_SENT: &str = "Not sent";
 const NOT_SENT_HINT: &str =
-    "This message could not be sent, and ZapFast will not retry it. Send it again yourself.";
+    "This message could not be sent, and WhatZap will not retry it. Send it again yourself.";
 
 pub fn show(app: &mut App, ui: &mut egui::Ui) {
     let Some(chat) = app.current_chat().cloned() else {
@@ -297,21 +297,21 @@ fn empty(app: &mut App, ui: &mut egui::Ui) {
     ui.painter().text(
         center,
         Align2::CENTER_CENTER,
-        "ZapFast",
+        "WhatZap",
         theme::bold(24.0),
         palette.text,
     );
-    ui.painter().text(
-        center + vec2(0.0, 30.0),
-        Align2::CENTER_CENTER,
-        if app.chats.is_empty() {
-            crate::i18n::gettext(app.locale, "Your chats appear on the left as they load.")
-        } else {
-            crate::i18n::gettext(app.locale, "Select a chat on the left.")
-        },
-        theme::regular(14.0),
-        palette.secondary,
-    );
+    if app.chats.is_empty() {
+        ui.painter().text(
+            center + vec2(0.0, 30.0),
+            Align2::CENTER_CENTER,
+            crate::i18n::gettext(app.locale, "Your chats appear on the left as they load."),
+            theme::regular(14.0),
+            palette.secondary,
+        );
+    } else {
+        fork_line(app, ui, center + vec2(0.0, 30.0));
+    }
     if app.settings.show_shortcut_hints {
         ui.painter().text(
             center + vec2(0.0, 56.0),
@@ -425,6 +425,37 @@ fn glass(palette: &Palette, rect: Rect, radius: f32) -> egui::Shape {
             egui::StrokeKind::Inside,
         ),
     ])
+}
+
+/// "A modified fork of ZapFast", centred on `center`, the name linking to
+/// the original project.
+fn fork_line(app: &mut App, ui: &mut egui::Ui, center: egui::Pos2) {
+    let palette = app.palette;
+    let (lead, name, gap) = ("A modified fork of", "ZapFast", 4.0);
+    let width = [(lead, theme::regular(14.0)), (name, theme::medium(14.0))]
+        .map(|(text, font)| {
+            ui.painter()
+                .layout_no_wrap(text.to_owned(), font, palette.text)
+                .size()
+                .x
+        })
+        .iter()
+        .sum::<f32>()
+        + gap;
+    let row = Rect::from_center_size(center, vec2(width + 2.0, 20.0));
+    ui.scope_builder(
+        egui::UiBuilder::new()
+            .max_rect(row)
+            .layout(Layout::left_to_right(Align::Center)),
+        |ui| {
+            ui.spacing_mut().item_spacing.x = gap;
+            theme::text(ui, lead, theme::regular(14.0), palette.secondary);
+            if theme::link(ui, name, theme::medium(14.0), palette.link).clicked() {
+                app.actions
+                    .push(Action::OpenUrl(env!("CARGO_PKG_REPOSITORY").to_owned()));
+            }
+        },
+    );
 }
 
 fn header(app: &mut App, ui: &mut egui::Ui, chat: &Chat) -> Rect {
@@ -1538,7 +1569,7 @@ fn composer(app: &mut App, ui: &mut egui::Ui, chat: &Chat, review_send: Option<b
                             } else {
                                 crate::i18n::gettext(
                                     app.locale,
-                                    "Channels are read-only in ZapFast",
+                                    "Channels are read-only in WhatZap",
                                 )
                             }
                             .as_ref(),

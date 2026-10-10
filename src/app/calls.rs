@@ -514,7 +514,7 @@ impl App {
             // Behind the app lock the desktop learns that a call came, and
             // nothing about who is calling.
             (
-                "ZapFast".to_owned(),
+                "WhatZap".to_owned(),
                 crate::i18n::gettext(self.locale, "Incoming call").into_owned(),
                 None,
             )
@@ -583,7 +583,7 @@ impl App {
         }
         let (title, body, picture) = if self.app_lock.is_locked() {
             (
-                "ZapFast".to_owned(),
+                "WhatZap".to_owned(),
                 crate::i18n::gettext(self.locale, "Incoming call").into_owned(),
                 None,
             )
@@ -622,11 +622,14 @@ impl App {
             .and_then(|group| group.caller.clone())
             .unwrap_or_else(|| update.chat.clone());
         let caller = self.display_name(&caller);
+        // Fork: upstream's text keeps its translations, then says WhatZap
+        // (FORK.md).
         if crate::model::ChatKind::from_id(&update.chat) == crate::model::ChatKind::Group {
             crate::i18n::gettext(
                 self.locale,
                 "{caller} is calling {group}. ZapFast can't join group calls yet: answer on your phone.",
             )
+            .replace("ZapFast", "WhatZap")
             .replace("{caller}", &caller)
             .replace("{group}", &self.chat_title_of(&update.chat))
         } else {
@@ -635,6 +638,7 @@ impl App {
                 self.locale,
                 "{caller} is calling you and others. ZapFast can't join group calls yet: answer on your phone.",
             )
+            .replace("ZapFast", "WhatZap")
             .replace("{caller}", &caller)
         }
     }
@@ -1042,7 +1046,7 @@ mod tests {
             "nothing is declined: {sent:?}"
         );
         let said =
-            "Ada is calling Book club. ZapFast can't join group calls yet: answer on your phone.";
+            "Ada is calling Book club. WhatZap can't join group calls yet: answer on your phone.";
         assert_eq!(app.notifications.shown.len(), 1);
         assert_eq!(app.notifications.shown[0].title, "Book club");
         assert_eq!(app.notifications.shown[0].body, said);

@@ -564,7 +564,7 @@ mod backend {
             let device = Device::open(id)
                 .map_err(|error| format!("the camera could not be opened: {error}"))?;
             let chosen = super::choose_mode(&modes(&device, budget), budget, fps)
-                .ok_or_else(|| "the camera offers no picture format ZapFast reads".to_owned())?;
+                .ok_or_else(|| "the camera offers no picture format WhatZap reads".to_owned())?;
             let capture = device
                 .video_capture(PixFormat::new(
                     chosen.width,
@@ -580,7 +580,7 @@ mod backend {
                 height: granted.height(),
                 fps: chosen.fps,
                 pixel: pixel(granted.pixel_format())
-                    .ok_or_else(|| "the camera chose a format ZapFast does not read".to_owned())?,
+                    .ok_or_else(|| "the camera chose a format WhatZap does not read".to_owned())?,
             };
             let fps = match capture.set_frame_interval(Fract::new(1, fps.max(1))) {
                 Ok(interval) => rate(&interval),

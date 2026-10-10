@@ -95,9 +95,9 @@ pub fn request_change(dirs: &AppDirs, folder: Option<&Path>) -> io::Result<Strin
     let home = current_home();
     let to = destination(&home, folder);
     let message = match plan(dirs, &to, folder, &has_key)? {
-        Plan::Move => format!("Restart ZapFast to move your data to {}", shown(&to)),
+        Plan::Move => format!("Restart WhatZap to move your data to {}", shown(&to)),
         Plan::Switch => format!(
-            "Restart ZapFast to use the data in {}; the current data stays in {}",
+            "Restart WhatZap to use the data in {}; the current data stays in {}",
             shown(&to),
             shown(dirs)
         ),
@@ -116,12 +116,12 @@ pub fn request_change(dirs: &AppDirs, folder: Option<&Path>) -> io::Result<Strin
 pub fn describe(here: &Path, pending: Option<&Option<PathBuf>>) -> String {
     match pending {
         Some(Some(folder)) => format!(
-            "{} (changes to {} when ZapFast restarts)",
+            "{} (changes to {} when WhatZap restarts)",
             here.display(),
             folder.display()
         ),
         Some(None) => format!(
-            "{} (changes to the standard folder when ZapFast restarts)",
+            "{} (changes to the standard folder when WhatZap restarts)",
             here.display()
         ),
         None => here.display().to_string(),
@@ -143,9 +143,9 @@ pub fn ask_on_first_launch(dirs: AppDirs) -> AppDirs {
     }
     loop {
         let choice = rfd::MessageDialog::new()
-            .set_title("ZapFast")
+            .set_title("WhatZap")
             .set_description(
-                "Where should ZapFast keep your chats and settings?\n\nChoose a folder that already holds ZapFast data to carry on from it, or an empty folder to start there.",
+                "Where should WhatZap keep your chats and settings?\n\nChoose a folder that already holds WhatZap data to carry on from it, or an empty folder to start there.",
             )
             .set_buttons(rfd::MessageButtons::OkCancelCustom(
                 "Standard location".into(),
@@ -156,7 +156,7 @@ pub fn ask_on_first_launch(dirs: AppDirs) -> AppDirs {
             return dirs;
         }
         let Some(folder) = rfd::FileDialog::new()
-            .set_title("Choose where ZapFast keeps its data")
+            .set_title("Choose where WhatZap keeps its data")
             .pick_folder()
         else {
             continue;
@@ -169,8 +169,8 @@ pub fn ask_on_first_launch(dirs: AppDirs) -> AppDirs {
             Err(error) => {
                 rfd::MessageDialog::new()
                     .set_level(rfd::MessageLevel::Warning)
-                    .set_title("ZapFast")
-                    .set_description(format!("ZapFast cannot use that folder: {error}"))
+                    .set_title("WhatZap")
+                    .set_description(format!("WhatZap cannot use that folder: {error}"))
                     .show();
             }
         }
@@ -255,7 +255,7 @@ fn finish_with(
             return (
                 dirs,
                 Some(Err(format!(
-                    "ZapFast's data folder was not changed: {error}"
+                    "WhatZap's data folder was not changed: {error}"
                 ))),
             );
         }
@@ -267,7 +267,7 @@ fn finish_with(
             Err(error) => {
                 return (
                     dirs,
-                    Some(Err(format!("ZapFast's data was not moved: {error}"))),
+                    Some(Err(format!("WhatZap's data was not moved: {error}"))),
                 );
             }
         },
@@ -281,7 +281,7 @@ fn finish_with(
             Plan::Move => (
                 to.clone(),
                 Some(Err(format!(
-                    "ZapFast's data moved to {}, but that could not be recorded ({error}). Fix {} before the next start",
+                    "WhatZap's data moved to {}, but that could not be recorded ({error}). Fix {} before the next start",
                     shown(&to),
                     marker(home, FOLDER).display()
                 ))),
@@ -289,9 +289,9 @@ fn finish_with(
         };
     }
     let mut message = match plan {
-        Plan::Move => format!("ZapFast's data is now in {}", shown(&to)),
+        Plan::Move => format!("WhatZap's data is now in {}", shown(&to)),
         Plan::Switch => format!(
-            "Using the ZapFast data in {}; the previous data stays in {}",
+            "Using the WhatZap data in {}; the previous data stays in {}",
             shown(&to),
             shown(&dirs)
         ),
@@ -323,7 +323,7 @@ fn plan(
     has_key: &dyn Fn(&Path) -> io::Result<bool>,
 ) -> io::Result<Plan> {
     if normal(&from.state) == normal(&to.state) {
-        return Err(io::Error::other("ZapFast's data is already there"));
+        return Err(io::Error::other("WhatZap's data is already there"));
     }
     let ours = [&from.config, &from.state, &from.cache];
     for source in ours {
@@ -331,7 +331,7 @@ fn plan(
             let (source, dest) = (normal(source), normal(dest));
             if source.starts_with(&dest) || dest.starts_with(&source) {
                 return Err(io::Error::other(format!(
-                    "{} is inside ZapFast's data or holds it; choose another folder",
+                    "{} is inside WhatZap's data or holds it; choose another folder",
                     dest.display()
                 )));
             }
@@ -343,7 +343,7 @@ fn plan(
         for archive in archives(&to.state) {
             if !has_key(&archive)? {
                 return Err(io::Error::other(format!(
-                    "this computer's keyring has no key for the archive in {}, so its history could not be read. Use a folder ZapFast set up or moved here",
+                    "this computer's keyring has no key for the archive in {}, so its history could not be read. Use a folder WhatZap set up or moved here",
                     archive.parent().unwrap_or(&archive).display()
                 )));
             }
@@ -358,7 +358,7 @@ fn plan(
         Ok(Plan::Move)
     } else {
         Err(io::Error::other(format!(
-            "{} holds other files; choose an empty folder, or a ZapFast data folder (the one with config, state and cache in it)",
+            "{} holds other files; choose an empty folder, or a WhatZap data folder (the one with config, state and cache in it)",
             shown(to)
         )))
     }
@@ -453,7 +453,7 @@ pub fn lock(dirs: &AppDirs) -> io::Result<fs::File> {
     match file.try_lock() {
         Ok(()) => Ok(file),
         Err(fs::TryLockError::WouldBlock) => Err(io::Error::other(format!(
-            "Another copy of ZapFast is using the data in {}",
+            "Another copy of WhatZap is using the data in {}",
             shown(dirs)
         ))),
         Err(fs::TryLockError::Error(error)) => Err(error),
