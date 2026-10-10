@@ -884,3 +884,16 @@ a fork they control until a release includes it.
 
 Reviewers treat either problem in a pull request as a blocker.
 <!-- /github-automation: pull-requests -->
+
+## What the agent runs (this fork)
+
+The user checks anything that needs the app running and someone watching it.
+This rule overrides the steps above that say to look at the result, such as
+`--demo-shot`.
+
+- Do not launch the app, take screenshots, or run anything whose result has
+  to be seen. Ask the user to do it: say what to open and what to look for,
+  then wait for their report.
+- Run only checks that give their result as text: type checking and lints
+  (`cargo check`, `cargo clippy`, `cargo fmt --check`) and command-line tests
+  (`cargo test`).
