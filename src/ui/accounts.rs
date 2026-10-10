@@ -2,7 +2,7 @@
 //! opens a menu of the numbers linked here and a way to add another. The
 //! settings keep their own button above it.
 
-use egui::{Align2, CornerRadius, Rect, Sense, Vec2, pos2, vec2};
+use egui::{Align2, CornerRadius, Layout, Rect, Sense, UiBuilder, Vec2, pos2, vec2};
 
 use crate::app::App;
 use crate::i18n::gettext;
@@ -152,6 +152,15 @@ fn menu(app: &mut App, button: &egui::Response) {
                         entry.id.clone(),
                         entry.muted,
                     )),
+                    // Fork: the paper plane opens the chat with ourselves
+                    // (FORK.md).
+                    Some(RowClick::Yourself) => {
+                        if !entry.current {
+                            app.actions.push(Action::SwitchAccount(entry.id.clone()));
+                        }
+                        app.actions.push(Action::MessageYourself);
+                        ui.close();
+                    }
                     Some(RowClick::Row) => {
                         if !entry.current {
                             app.actions.push(Action::SwitchAccount(entry.id.clone()));
@@ -180,11 +189,13 @@ enum RowClick {
     Row,
     /// Its bell, which turns the account's notifications off or on.
     Bell,
+    /// Its paper plane, which opens the chat with ourselves.
+    Yourself,
 }
 
-/// One account in the switcher: its picture, name and number, its unread
-/// chats, a check on the one on screen, and a bell that mutes its
-/// notifications. The bell shows while the account is muted, or while the
+/// One account in the switcher: its picture, name and number, a paper plane
+/// to message ourselves, its unread chats, a check on the one on screen, and
+/// a bell that mutes its notifications. The bell shows while the account is muted, or while the
 /// row is pointed at or the bell has the keyboard focus.
 fn account_row(app: &App, ui: &mut egui::Ui, entry: &Entry) -> Option<RowClick> {
     let palette = app.palette;
@@ -216,6 +227,7 @@ fn account_row(app: &App, ui: &mut egui::Ui, entry: &Entry) -> Option<RowClick> 
             row_label(app, entry),
         )
     });
+    let mut plane = None;
     if ui.is_rect_visible(rect) {
         if response.hovered() || entry.current {
             let fill = if entry.current && !response.hovered() {
@@ -274,6 +286,12 @@ fn account_row(app: &App, ui: &mut egui::Ui, entry: &Entry) -> Option<RowClick> 
             );
             text_right -= width.max(24.0) + 4.0;
         }
+        if !entry.me.is_empty() {
+            let slot =
+                Rect::from_center_size(pos2(text_right - 14.0, rect.center().y), Vec2::splat(28.0));
+            text_right = slot.left() - 4.0;
+            plane = Some(slot);
+        }
         let x = avatar.right() + 10.0;
         let max_width = (text_right - x).max(0.0);
         let name = single_line(
@@ -301,6 +319,23 @@ fn account_row(app: &App, ui: &mut egui::Ui, entry: &Entry) -> Option<RowClick> 
             ui.painter().galley(pos2(x, y), detail, palette.secondary);
         }
     }
+    // Registered after the row, so it takes the clicks over its slot.
+    let yourself = plane.is_some_and(|slot| {
+        let mut child = ui.new_child(
+            UiBuilder::new()
+                .max_rect(slot)
+                .layout(Layout::centered_and_justified(egui::Direction::LeftToRight)),
+        );
+        theme::icon_button(
+            &mut child,
+            Icon::Send,
+            16.0,
+            palette.secondary,
+            palette.text,
+            &gettext(app.locale, "Message yourself"),
+        )
+        .clicked()
+    });
     let bell_clicked = bell.clicked();
     bell.on_hover_text(bell_label(app, entry))
         .on_hover_cursor(egui::CursorIcon::PointingHand);
@@ -310,6 +345,8 @@ fn account_row(app: &App, ui: &mut egui::Ui, entry: &Entry) -> Option<RowClick> 
     }
     if bell_clicked {
         Some(RowClick::Bell)
+    } else if yourself {
+        Some(RowClick::Yourself)
     } else if clicked {
         Some(RowClick::Row)
     } else {
