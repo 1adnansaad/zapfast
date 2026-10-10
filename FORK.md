@@ -159,6 +159,9 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
 - **Why:** this fork's own name, with credit to the project it comes from.
 - **Files:** user-visible strings in `src/main.rs`, `src/app.rs`,
   `src/notify.rs`, `src/notify/windows.rs` (`DisplayName` only),
+  `Cargo.toml` (`[[bin]]` is `WhatZap`, so the file is `WhatZap.exe`; the
+  package and library stay `zapfast`), `src/main.rs` (`allow(non_snake_case)`
+  for that crate name), `tests/update_flags.rs` (`CARGO_BIN_EXE_WhatZap`),
   `src/macos.rs`, `src/autostart.rs` (Linux `Name=`/`Comment=`),
   `src/data_folder.rs`, `src/paths.rs`, `src/archive/encryption.rs` (messages,
   with their copies in `src/ui/login.rs`'s test), `src/backend/worker.rs`,
@@ -177,7 +180,10 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
 - **Cost:** translated strings that named ZapFast (lock screen, the labels
   limit, read-only notes, locked-chat dialogs) are new msgids, so other
   languages show them in English. Installers, the macOS bundle, Linux
-  packages and the docs site still say ZapFast.
+  packages and the docs site still say ZapFast. The release workflow and
+  `packaging/windows/zapfast.iss` still expect `zapfast.exe`. A Windows
+  start-at-login entry made by `zapfast.exe` points at that file until it is
+  turned off and on again in Settings.
 
 ### yt-dlp tab in the picker
 

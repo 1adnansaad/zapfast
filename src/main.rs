@@ -1,6 +1,9 @@
 //! Desktop entry point.
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+// The binary is named WhatZap so the file is WhatZap.exe, which makes this
+// crate's name not snake case; the library keeps the name `zapfast`.
+#![allow(non_snake_case)]
 
 use zapfast::{app, backend, paths, settings, single_instance};
 
