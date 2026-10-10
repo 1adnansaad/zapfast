@@ -135,6 +135,17 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
 - **Cost:** the name and number column is 32pt narrower and ellipsizes
   sooner. The tooltip reuses the translated "Message yourself" string.
 
+### Agents ask the user to run and look
+
+- **What:** a section at the end of `AGENTS.md`, "What the agent runs (this
+  fork)": agents ask the user to do anything that means running the app and
+  watching it (including `--demo-shot`), and run only checks that give their
+  result as text (type checking, lints, `cargo test`).
+- **Why:** the user checks how things look and feel; agents check the code.
+- **Files:** `AGENTS.md` (appended section only).
+- **Cost:** none. Kept at the end of the file because upstream edits
+  `AGENTS.md` often, so a sync should only conflict if upstream appends too.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream
