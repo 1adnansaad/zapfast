@@ -82,4 +82,5 @@ ZapFast asks your phone for older messages. The phone must be online.
 ## Try it in your own chat
 
 Use WhatsApp's **Message yourself** chat to try messages, reactions, edits,
-voice messages, and attachments privately.
+voice messages, and attachments privately. The paper plane beside your number,
+in the menu under your own picture at the top of the chat list, opens it.

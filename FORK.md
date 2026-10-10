@@ -121,6 +121,20 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   until it is back or `config.folder` is removed. An upstream build would not
   read `config.folder` and would start from the standard place.
 
+### Paper plane in the account switcher
+
+- **What:** each linked account in the menu under our own picture (beside
+  "Chats") has a paper plane between its name and number and the check or
+  unread count. It opens that account's chat with ourselves, switching to the
+  account first when it is not the one on screen (`Action::MessageYourself`,
+  the same as the New chat dialog's "Message yourself" row).
+- **Why:** one click to the self chat.
+- **Files:** `src/ui/accounts.rs` (`account_row` and `menu`), `src/demo.rs`
+  (`the_switchers_paper_plane_messages_yourself`),
+  `docs/_guide/getting-started.md`.
+- **Cost:** the name and number column is 32pt narrower and ellipsizes
+  sooner. The tooltip reuses the translated "Message yourself" string.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream

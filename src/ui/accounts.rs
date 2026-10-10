@@ -2,7 +2,7 @@
 //! menu of the numbers linked here and a way to add another. The settings
 //! keep their own button beside it.
 
-use egui::{Align2, CornerRadius, Rect, Sense, Vec2, pos2, vec2};
+use egui::{Align2, CornerRadius, Layout, Rect, Sense, UiBuilder, Vec2, pos2, vec2};
 
 use crate::app::App;
 use crate::i18n::gettext;
@@ -110,7 +110,14 @@ fn menu(app: &mut App, button: &egui::Response) {
         .frame(widgets::menu_frame(&palette))
         .show(|ui| {
             for entry in &entries {
-                if account_row(app, ui, entry) && !entry.current {
+                let (row, yourself) = account_row(app, ui, entry);
+                if yourself {
+                    if !entry.current {
+                        app.actions.push(Action::SwitchAccount(entry.id.clone()));
+                    }
+                    app.actions.push(Action::MessageYourself);
+                    ui.close();
+                } else if row && !entry.current {
                     app.actions.push(Action::SwitchAccount(entry.id.clone()));
                     ui.close();
                 }
@@ -127,9 +134,10 @@ fn menu(app: &mut App, button: &egui::Response) {
         });
 }
 
-/// One account in the switcher: its picture, name and number, its unread
-/// chats, and a check on the one on screen. Returns whether it was clicked.
-fn account_row(app: &App, ui: &mut egui::Ui, entry: &Entry) -> bool {
+/// One account in the switcher: its picture, name and number, a paper plane
+/// to message ourselves, its unread chats, and a check on the one on screen.
+/// Returns whether the row and whether the plane were clicked.
+fn account_row(app: &App, ui: &mut egui::Ui, entry: &Entry) -> (bool, bool) {
     let palette = app.palette;
     let width = ui.available_width();
     let (rect, response) = ui.allocate_exact_size(vec2(width, ROW), Sense::click());
@@ -142,6 +150,7 @@ fn account_row(app: &App, ui: &mut egui::Ui, entry: &Entry) -> bool {
             row_label(app, entry),
         )
     });
+    let mut plane = None;
     if ui.is_rect_visible(rect) {
         if response.hovered() || entry.current {
             let fill = if entry.current && !response.hovered() {
@@ -185,6 +194,12 @@ fn account_row(app: &App, ui: &mut egui::Ui, entry: &Entry) -> bool {
             );
             text_right -= width.max(24.0) + 4.0;
         }
+        if !entry.me.is_empty() {
+            let slot =
+                Rect::from_center_size(pos2(text_right - 14.0, rect.center().y), Vec2::splat(28.0));
+            text_right = slot.left() - 4.0;
+            plane = Some(slot);
+        }
         let x = avatar.right() + 10.0;
         let max_width = (text_right - x).max(0.0);
         let name = single_line(
@@ -212,11 +227,28 @@ fn account_row(app: &App, ui: &mut egui::Ui, entry: &Entry) -> bool {
             ui.painter().galley(pos2(x, y), detail, palette.secondary);
         }
     }
+    // Registered after the row, so it takes the clicks over its slot.
+    let yourself = plane.is_some_and(|slot| {
+        let mut child = ui.new_child(
+            UiBuilder::new()
+                .max_rect(slot)
+                .layout(Layout::centered_and_justified(egui::Direction::LeftToRight)),
+        );
+        theme::icon_button(
+            &mut child,
+            Icon::Send,
+            16.0,
+            palette.secondary,
+            palette.text,
+            &gettext(app.locale, "Message yourself"),
+        )
+        .clicked()
+    });
     let clicked = response.clicked();
     if !entry.current {
         response.on_hover_cursor(egui::CursorIcon::PointingHand);
     }
-    clicked
+    (clicked, yourself)
 }
 
 /// What a screen reader says for an account row.

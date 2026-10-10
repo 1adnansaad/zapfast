@@ -6925,6 +6925,60 @@ mod tests {
         }
     }
 
+    /// The paper plane beside our number opens the chat with ourselves; the
+    /// row under it does not take the click.
+    #[test]
+    fn the_switchers_paper_plane_messages_yourself() {
+        let mut app = app();
+        let ctx = egui::Context::default();
+        ctx.enable_accesskit();
+        app.attach(&ctx);
+        app.account_menu = true;
+        let mut plane = None;
+        for _ in 0..3 {
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(
+                        egui::Pos2::ZERO,
+                        egui::vec2(1180.0, 780.0),
+                    )),
+                    ..Default::default()
+                },
+                |ui| {
+                    let ctx = ui.ctx().clone();
+                    app.background_frame(&ctx);
+                    app.frame_ui(ui);
+                },
+            );
+            output.textures_delta.clear();
+            plane = output
+                .platform_output
+                .accesskit_update
+                .expect("accessibility tree")
+                .nodes
+                .iter()
+                .find(|(_, node)| node.label() == Some("Message yourself"))
+                .and_then(|(_, node)| node.bounds());
+        }
+        let plane = plane.expect("our account offers the paper plane");
+        let pos = egui::pos2(
+            ((plane.x0 + plane.x1) / 2.0) as f32,
+            ((plane.y0 + plane.y1) / 2.0) as f32,
+        );
+        let press = |pressed| egui::Event::PointerButton {
+            pos,
+            button: egui::PointerButton::Primary,
+            pressed,
+            modifiers: egui::Modifiers::NONE,
+        };
+        assert!(app.me.is_some());
+        assert_ne!(app.open_chat, app.me);
+        frame_with(&mut app, &ctx, vec![egui::Event::PointerMoved(pos)]);
+        frame_with(&mut app, &ctx, vec![press(true)]);
+        frame_with(&mut app, &ctx, vec![press(false)]);
+        assert_eq!(app.open_chat, app.me);
+    }
+
     #[test]
     fn account_privacy_fetch_fills_the_rows() {
         let mut app = app();
