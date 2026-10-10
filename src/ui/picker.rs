@@ -18,6 +18,8 @@ use crate::theme::{self, Icon, Palette};
 use super::conversation;
 use super::widgets;
 
+mod ytdlp;
+
 const WIDTH: f32 = 420.0;
 const HEIGHT: f32 = 400.0;
 /// Frame inner margin on each side. Placement uses the outer size.
@@ -111,6 +113,7 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
                             PickerTab::Emoji => emoji_tab(app, ui, &palette),
                             PickerTab::Gifs => gif_tab(app, ui, &palette),
                             PickerTab::Stickers => sticker_tab(app, ui, &palette),
+                            PickerTab::YtDlp => ytdlp::tab(app, ui, &palette),
                         },
                     );
                     // Keep the tabs at the bottom when content is short.
@@ -146,6 +149,7 @@ fn tabs(app: &mut App, ui: &mut egui::Ui, palette: &Palette, current: PickerTab)
             (PickerTab::Emoji, Icon::Smile, emoji.as_ref()),
             (PickerTab::Gifs, Icon::Gif, gif.as_ref()),
             (PickerTab::Stickers, Icon::Sticker, stickers.as_ref()),
+            (PickerTab::YtDlp, Icon::Video, "yt-dlp"),
         ];
         let spacing = ui.spacing().item_spacing.x;
         let total = entries

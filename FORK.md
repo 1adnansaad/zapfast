@@ -179,6 +179,45 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   languages show them in English. Installers, the macOS bundle, Linux
   packages and the docs site still say ZapFast.
 
+### yt-dlp tab in the picker
+
+- **What:** a fourth picker tab, yt-dlp, beside Emoji, GIF and Stickers. A
+  strip of site tabs like the sticker shelves (YouTube, X, Instagram,
+  Facebook, TikTok, and a link icon for any other site yt-dlp reads) sits
+  over a field: YouTube searches or takes a link, the others take a link.
+  Results show as thumbnails with length and title; a click fetches the video
+  (H.264/AAC MP4, at most 720p, under the 64 MB attachment limit) and sends
+  it to the open chat with the reply that was open, through `send_files`.
+  The yt-dlp program is run directly, no Rust crate: from `PATH` first, else
+  a copy downloaded from yt-dlp's GitHub release when the tab's button is
+  clicked, checked against `SHA2-256SUMS`, and updated with `yt-dlp -U` once
+  a week. ffmpeg is optional (needed above YouTube's 360p single files): from
+  `PATH`, or on Windows yt-dlp's shared FFmpeg build (about 85 MB) on request,
+  checked against `checksums.sha256`. Runs hide their console window on
+  Windows and pass the Proxy setting as `--proxy`.
+- **Why:** send videos from the sites I use without saving them by hand.
+- **Files:** `src/ytdlp.rs` (new: types, finding and installing the tools,
+  search, download, tests), `src/backend/worker/ytdlp.rs` (new: the worker
+  side), `src/ui/picker/ytdlp.rs` (new: the tab and its tests),
+  `assets/icons/{youtube,instagram,facebook,link}.svg` (Lucide) and
+  `{x-logo,tiktok}.svg` (drawn here), `src/theme.rs` (icon table),
+  `src/ui/picker.rs` (tab entry and match arm), `src/model.rs`
+  (`PickerTab::YtDlp`, four actions), `src/backend.rs` (commands and
+  events), `src/backend/worker.rs` (dispatch, read-only check), `src/app.rs`
+  (`ytdlp` state, actions, events, test), `src/paths.rs`
+  (`AccountDirs::tools_dir`), `src/proxy.rs` (`Proxy::url`), `src/lib.rs`,
+  `src/demo.rs` (`ytdlp`, `ytdlp-missing`),
+  `docs/_reference/settings-and-files.md`, `docs/_reference/how-it-links.md`.
+- **Cost:** only YouTube can be searched (yt-dlp searches no other of these
+  sites). The ffmpeg download is Windows only; elsewhere install it with the
+  package manager. Downloads of the tools use the Proxy setting; yt-dlp gets
+  it on its command line, where other local users could see it. A video
+  over 64 MB is refused. Without ffmpeg, a site that serves only streams in
+  pieces may not send. No browser cookies are passed, so posts that need a
+  login (common on Instagram and Facebook) fail with yt-dlp's message.
+  English-only labels. Tools live in `cache/yt-dlp/`, so clearing the cache
+  means downloading them again.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream

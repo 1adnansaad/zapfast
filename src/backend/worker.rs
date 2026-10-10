@@ -65,6 +65,7 @@ mod sticker_pace;
 mod stickers;
 #[cfg(test)]
 mod write_batching;
+mod ytdlp;
 
 use super::{
     Command, Event, GroupEdit, LinkStatus, MessageRemovalOutcome, Refusal, SendTurn, Unsent, Waker,
@@ -7284,6 +7285,7 @@ impl Worker {
             | Command::SendSticker { chat, .. }
             | Command::SendGif { chat, .. }
             | Command::SendLocation { chat, .. }
+            | Command::SendWebVideo { chat, .. }
             | Command::CreatePoll { chat, .. } => Some(chat),
             // A batch goes to every recipient or to none of them.
             Command::Forward { to_chats, .. } => to_chats
@@ -8435,6 +8437,9 @@ impl Worker {
                     let _ = commands.send(Command::GifAnimated { id, path });
                 });
             }
+            Command::YtDlpTools { install } => self.ytdlp_tools(install),
+            Command::FindWebVideos { query } => self.find_web_videos(query),
+            Command::SendWebVideo { chat, url, quoting } => self.send_web_video(chat, url, quoting),
             Command::ReceiptsPrivacy { disabled } => {
                 self.emit(Event::ReceiptsPrivacy { disabled });
             }
@@ -8600,6 +8605,7 @@ impl Worker {
             Command::GifAnimated { id, path } => {
                 self.emit(Event::GifAnimated { id, path });
             }
+            Command::YtDlpReport(event) => self.emit(*event),
             Command::ViewStickerPack { chat, message } => self.view_sticker_pack(&chat, &message),
             Command::StickerPackViewed { result } => {
                 self.emit(Event::StickerPackPreview(result));

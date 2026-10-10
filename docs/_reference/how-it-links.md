@@ -43,7 +43,10 @@ The message archive, media, and session keys stay on your computer.
 to WhatsApp's servers, GIPHY for the GIF picker and search, and Signal's sticker
 CDN when you import a Signal sticker pack. While you write a link in a new text
 message, it also contacts that link's site, and whichever site the page names
-for its picture, to build a [preview](/using-zapfast/#writing). It has no
+for its picture, to build a [preview](/using-zapfast/#writing). The picker's
+yt-dlp tab, only when used, runs yt-dlp, which talks to the video site you
+search or link (YouTube, X, Instagram, Facebook, TikTok, or another), and
+downloads yt-dlp and ffmpeg from GitHub when you ask it to. It has no
 telemetry. It also asks
 `api.github.com` once a day whether a newer release exists; you can turn this
 off in Settings. Downloading an update fetches release files from GitHub.

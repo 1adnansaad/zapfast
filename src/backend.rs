@@ -928,6 +928,20 @@ pub enum Command {
         url: String,
         extension: String,
     },
+    /// Looks for yt-dlp and ffmpeg, first downloading one if asked.
+    YtDlpTools {
+        install: Option<crate::ytdlp::ToolKind>,
+    },
+    /// Searches YouTube, or reads a link, through yt-dlp.
+    FindWebVideos {
+        query: String,
+    },
+    /// Fetches a video through yt-dlp and sends it as a file.
+    SendWebVideo {
+        chat: ChatId,
+        url: String,
+        quoting: Option<crate::model::ReplyTarget>,
+    },
     /// Loads recent and saved stickers for the picker.
     RecentStickers,
     React {
@@ -1084,6 +1098,8 @@ pub enum Command {
         token: u64,
         cleared: bool,
     },
+    /// Internal yt-dlp result, emitted as it is.
+    YtDlpReport(Box<Event>),
     /// Internal file-picker result.
     Picked {
         chat: ChatId,
@@ -1401,6 +1417,13 @@ pub enum Event {
     GifAnimated {
         id: String,
         path: Option<PathBuf>,
+    },
+    /// Which of yt-dlp and ffmpeg can run.
+    YtDlpTools(crate::ytdlp::Tools),
+    /// yt-dlp search or link results, or failure.
+    WebVideos {
+        query: String,
+        results: Result<Vec<crate::ytdlp::WebVideo>, String>,
     },
     /// A picture chosen for the sticker maker: its file, size, and whether it
     /// has see-through pixels.
