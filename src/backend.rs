@@ -942,6 +942,10 @@ pub enum Command {
         url: String,
         quoting: Option<crate::model::ReplyTarget>,
     },
+    /// Fetches a video through yt-dlp into the download folder.
+    SaveWebVideo {
+        url: String,
+    },
     /// Loads recent and saved stickers for the picker.
     RecentStickers,
     React {
@@ -1424,6 +1428,11 @@ pub enum Event {
     WebVideos {
         query: String,
         results: Result<Vec<crate::ytdlp::WebVideo>, String>,
+    },
+    /// How a video fetched for its card through yt-dlp is going.
+    WebVideo {
+        url: String,
+        fetch: crate::ytdlp::Fetch,
     },
     /// A picture chosen for the sticker maker: its file, size, and whether it
     /// has see-through pixels.

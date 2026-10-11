@@ -7318,6 +7318,11 @@ impl Worker {
                     chat: chat.clone(),
                     error: Some(error),
                 });
+            } else if let Command::SendWebVideo { url, .. } = &command {
+                self.emit(Event::WebVideo {
+                    url: url.clone(),
+                    fetch: crate::ytdlp::Fetch::Failed(error),
+                });
             } else {
                 self.emit(Event::Error(error));
             }
@@ -8439,7 +8444,10 @@ impl Worker {
             }
             Command::YtDlpTools { install } => self.ytdlp_tools(install),
             Command::FindWebVideos { query } => self.find_web_videos(query),
-            Command::SendWebVideo { chat, url, quoting } => self.send_web_video(chat, url, quoting),
+            Command::SendWebVideo { chat, url, quoting } => {
+                self.fetch_web_video(url, Some((chat, quoting)));
+            }
+            Command::SaveWebVideo { url } => self.fetch_web_video(url, None),
             Command::ReceiptsPrivacy { disabled } => {
                 self.emit(Event::ReceiptsPrivacy { disabled });
             }

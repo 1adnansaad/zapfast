@@ -10,8 +10,11 @@ use std::sync::{Arc, Mutex};
 use std::time::{Duration, Instant};
 
 pub use fastframe_dock::Badge;
+// Fork: the red dot instead of fastframe-dock's count (FORK.md).
 #[cfg(target_os = "windows")]
-pub use fastframe_dock::Taskbar;
+mod badge_windows;
+#[cfg(target_os = "windows")]
+pub use badge_windows::Taskbar;
 
 /// The localized accessible text for the Windows unread overlay.
 #[cfg(any(target_os = "windows", test))]

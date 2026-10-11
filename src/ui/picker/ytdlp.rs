@@ -2,16 +2,19 @@
 //! the chosen site's search or link field and the videos found, or the
 //! download of yt-dlp itself when it is missing.
 
-use egui::{Key, Modifiers, Rect, Sense, Stroke, Vec2, vec2};
+use egui::{Key, Modifiers, Rect, Sense, Stroke, Vec2, pos2, vec2};
 
 use super::{SHELF_TAB, search_box};
 use crate::app::App;
 use crate::model::Action;
 use crate::theme::{self, Icon, Palette};
 use crate::ui::widgets;
-use crate::ytdlp::{FFMPEG_DOWNLOAD, Tool, ToolKind, VideoSite, WebVideo, is_link};
+use crate::ytdlp::{FFMPEG_DOWNLOAD, Fetch, Tool, ToolKind, VideoSite, WebVideo, is_link};
 
 const SEARCH_ID: &str = "ytdlp-search";
+/// A card's title line and its row of buttons, under the picture.
+const TITLE: f32 = 22.0;
+const BUTTONS: f32 = 28.0;
 
 fn icon(site: VideoSite) -> Icon {
     match site {
@@ -29,9 +32,10 @@ pub fn site_tab_id(site: VideoSite) -> egui::Id {
     egui::Id::new(("ytdlp-site-tab", site))
 }
 
-/// Where the first video was drawn, so tests can click it.
-pub fn first_video_id() -> egui::Id {
-    egui::Id::new("ytdlp-first-video")
+/// Where the first card's Download and Send were drawn, so tests can click
+/// them.
+pub fn first_buttons_id() -> egui::Id {
+    egui::Id::new("ytdlp-first-buttons")
 }
 
 pub(super) fn tab(app: &mut App, ui: &mut egui::Ui, palette: &Palette) {
@@ -189,7 +193,8 @@ fn ffmpeg_line(app: &mut App, ui: &mut egui::Ui, palette: &Palette, tool: &Tool)
     }
 }
 
-/// Two columns of thumbnails with their length and title; a click sends.
+/// Two columns of cards; each downloads or sends its video, showing the
+/// download's progress while it runs.
 fn results(app: &mut App, ui: &mut egui::Ui, palette: &Palette) {
     let videos = app.ytdlp.results.clone();
     let columns = 2;
@@ -205,23 +210,13 @@ fn results(app: &mut App, ui: &mut egui::Ui, palette: &Palette) {
             for (row, pair) in videos.chunks(columns).enumerate() {
                 ui.horizontal(|ui| {
                     for (column, video) in pair.iter().enumerate() {
-                        let (rect, response) =
-                            ui.allocate_exact_size(vec2(width, picture.y + 20.0), Sense::click());
-                        if row == 0 && column == 0 {
-                            ui.ctx()
-                                .data_mut(|data| data.insert_temp(first_video_id(), rect));
-                        }
-                        if ui.is_rect_visible(rect) {
-                            tile(ui, palette, video, rect, picture, response.hovered());
-                        }
-                        let response = response.on_hover_cursor(egui::CursorIcon::PointingHand);
-                        let response = if video.title.is_empty() {
-                            response
-                        } else {
-                            response.on_hover_text(&video.title)
-                        };
-                        if response.clicked() {
-                            picked = Some(video.clone());
+                        let size = vec2(width, picture.y + TITLE + BUTTONS);
+                        let (rect, _) = ui.allocate_exact_size(size, Sense::hover());
+                        let id = egui::Id::new(("ytdlp-card", row, column));
+                        let fetch = app.ytdlp.fetches.get(&video.url);
+                        let first = row == 0 && column == 0;
+                        if let Some(action) = card(ui, palette, id, video, fetch, rect, first) {
+                            picked = Some(action);
                         }
                     }
                 });
@@ -242,20 +237,144 @@ fn results(app: &mut App, ui: &mut egui::Ui, palette: &Palette) {
                 });
             }
         });
-    if let Some(video) = picked {
-        app.actions.push(Action::SendWebVideo(video));
+    if let Some(action) = picked {
+        app.actions.push(action);
     }
 }
 
-fn tile(
+/// A video's card: its picture and length, its title (or what went wrong),
+/// then Download and Send, or the download's progress in their place.
+fn card(
     ui: &mut egui::Ui,
     palette: &Palette,
+    id: egui::Id,
     video: &WebVideo,
+    fetch: Option<&Fetch>,
     rect: Rect,
-    picture: Vec2,
-    hovered: bool,
-) {
+    first: bool,
+) -> Option<Action> {
+    let buttons = Rect::from_min_max(pos2(rect.left(), rect.bottom() - BUTTONS), rect.max);
+    let half = (buttons.width() - 6.0) / 2.0;
+    let save = Rect::from_min_size(buttons.min, vec2(half, BUTTONS));
+    let send = Rect::from_min_size(pos2(buttons.right() - half, buttons.top()), save.size());
+    if first {
+        ui.ctx()
+            .data_mut(|data| data.insert_temp(first_buttons_id(), [save, send]));
+    }
+    if !ui.is_rect_visible(rect) {
+        return None;
+    }
+    let picture = vec2(rect.width(), rect.height() - TITLE - BUTTONS);
     let frame = Rect::from_min_size(rect.min, picture);
+    poster(ui, palette, video, frame);
+    let (line, color) = match fetch {
+        Some(Fetch::Failed(error)) => (error.as_str(), palette.danger),
+        _ => (video.title.as_str(), palette.text),
+    };
+    let title = Rect::from_min_size(frame.left_bottom(), vec2(picture.x, TITLE));
+    let mut title = ui.new_child(
+        egui::UiBuilder::new()
+            .max_rect(title)
+            .layout(egui::Layout::left_to_right(egui::Align::Center)),
+    );
+    let shown = theme::text(&mut title, line, theme::regular(12.5), color);
+    if !line.is_empty() {
+        shown.on_hover_text(line);
+    }
+    if let Some(Fetch::Running { send, fraction }) = fetch {
+        progress(ui, palette, buttons, *send, *fraction);
+        return None;
+    }
+    let saved = match fetch {
+        Some(Fetch::Saved(path)) => Some(path),
+        _ => None,
+    };
+    let (icon, label, tip) = match saved {
+        Some(_) => (Icon::Check, "Saved", "Show in its folder"),
+        None => (Icon::Download, "Download", "Save to the download folder"),
+    };
+    // Both buttons are drawn every frame: egui hit-tests against last
+    // frame's widgets, so one skipped for a frame misses the next click.
+    let saving = button(ui, palette, save, id.with("save"), icon, label, tip).clicked();
+    let (icon, label, tip) = match fetch {
+        Some(Fetch::Sent) => (Icon::Check, "Sent", "Send again"),
+        _ => (Icon::Send, "Send", "Send to the open chat"),
+    };
+    let sending = button(ui, palette, send, id.with("send"), icon, label, tip).clicked();
+    if saving {
+        Some(match saved {
+            Some(path) => Action::OpenFolder(path.parent().unwrap_or(path).to_owned()),
+            None => Action::SaveWebVideo(video.clone()),
+        })
+    } else if sending {
+        Some(Action::SendWebVideo(video.clone()))
+    } else {
+        None
+    }
+}
+
+/// Half a card's width: an icon and a short label on a soft pill.
+fn button(
+    ui: &mut egui::Ui,
+    palette: &Palette,
+    rect: Rect,
+    id: egui::Id,
+    icon: Icon,
+    label: &str,
+    tip: &str,
+) -> egui::Response {
+    let response = ui.interact(rect, id, Sense::click());
+    theme::reveal_focus(&response);
+    response.widget_info(|| {
+        egui::WidgetInfo::labeled(egui::WidgetType::Button, ui.is_enabled(), label)
+    });
+    theme::focus_outline(ui, response.id, rect, rect.height() / 2.0);
+    let fill = if response.hovered() {
+        palette.surface_hover
+    } else {
+        palette.surface
+    };
+    ui.painter().rect_filled(rect, rect.height() / 2.0, fill);
+    let galley = ui
+        .painter()
+        .layout_no_wrap(label.to_owned(), theme::medium(12.5), palette.text);
+    let left = rect.center().x - (20.0 + galley.size().x) / 2.0;
+    let mark = Rect::from_center_size(pos2(left + 7.5, rect.center().y), Vec2::splat(15.0));
+    theme::paint_icon(ui, icon, mark, 15.0, palette.text);
+    let at = pos2(left + 20.0, rect.center().y - galley.size().y / 2.0);
+    ui.painter().galley(at, galley, palette.text);
+    response
+        .on_hover_cursor(egui::CursorIcon::PointingHand)
+        .on_hover_text(tip)
+}
+
+/// The download's bar in place of the buttons, saying what it is for.
+fn progress(ui: &egui::Ui, palette: &Palette, rect: Rect, send: bool, fraction: Option<f32>) {
+    let radius = rect.height() / 2.0;
+    ui.painter().rect_filled(rect, radius, palette.surface);
+    let verb = if send { "Sending" } else { "Downloading" };
+    let label = match fraction {
+        Some(fraction) => {
+            let done = Rect::from_min_size(rect.min, vec2(rect.width() * fraction, rect.height()));
+            ui.painter().with_clip_rect(done).rect_filled(
+                rect,
+                radius,
+                palette.accent.gamma_multiply(0.35),
+            );
+            format!("{verb} {}%", (fraction * 100.0) as u32)
+        }
+        None => format!("{verb}…"),
+    };
+    let galley = ui
+        .painter()
+        .layout_no_wrap(label, theme::medium(12.5), palette.text);
+    ui.painter()
+        .galley(rect.center() - galley.size() / 2.0, galley, palette.text);
+}
+
+/// The thumbnail with the video's length on it.
+fn poster(ui: &mut egui::Ui, palette: &Palette, video: &WebVideo, frame: Rect) {
+    let picture = frame.size();
     ui.painter().rect_filled(frame, 6.0, palette.surface);
     match &video.thumbnail {
         Some(path) => {
@@ -281,24 +400,6 @@ fn tile(
         ui.painter()
             .galley(badge.min + vec2(3.0, 1.0), galley, egui::Color32::WHITE);
     }
-    if hovered {
-        ui.painter().rect_stroke(
-            frame,
-            6.0,
-            Stroke::new(2.0, palette.accent),
-            egui::StrokeKind::Inside,
-        );
-    }
-    let title = Rect::from_min_size(
-        frame.left_bottom() + vec2(0.0, 2.0),
-        vec2(picture.x, rect.bottom() - frame.bottom() - 2.0),
-    );
-    let mut line = ui.new_child(
-        egui::UiBuilder::new()
-            .max_rect(title)
-            .layout(egui::Layout::left_to_right(egui::Align::Center)),
-    );
-    theme::text(&mut line, &video.title, theme::regular(12.5), palette.text);
 }
 
 /// A length as a video player shows it: `4:05`, `1:02:03`.
@@ -348,7 +449,7 @@ mod tests {
     }
 
     #[test]
-    fn a_site_tab_is_chosen_and_a_found_video_is_sent() {
+    fn a_site_tab_is_chosen_and_a_found_video_is_saved_or_sent() {
         let directory = tempfile::tempdir().expect("creates a temporary directory");
         let (mut app, _events) = App::headless(
             crate::paths::AppDirs::under(directory.path()),
@@ -378,10 +479,23 @@ mod tests {
                 .contains(&Action::SelectVideoSite(VideoSite::TikTok))
         );
         app.actions.clear();
-        let first = ctx
-            .data(|data| data.get_temp::<Rect>(first_video_id()))
+        let [save, send] = ctx
+            .data(|data| data.get_temp::<[Rect; 2]>(first_buttons_id()))
             .expect("a result is drawn");
-        frame(&mut app, &ctx, click(first.center()));
-        assert!(app.actions.contains(&Action::SendWebVideo(video)));
+        frame(&mut app, &ctx, click(save.center()));
+        assert_eq!(app.actions, vec![Action::SaveWebVideo(video.clone())]);
+        app.actions.clear();
+        frame(&mut app, &ctx, click(send.center()));
+        assert_eq!(app.actions, vec![Action::SendWebVideo(video.clone())]);
+        app.actions.clear();
+
+        // While it downloads, its progress takes the buttons' place.
+        let running = Fetch::Running {
+            send: true,
+            fraction: Some(0.4),
+        };
+        app.ytdlp.fetches.insert(video.url.clone(), running);
+        frame(&mut app, &ctx, click(send.center()));
+        assert!(app.actions.is_empty());
     }
 }

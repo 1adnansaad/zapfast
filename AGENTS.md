@@ -887,13 +887,14 @@ Reviewers treat either problem in a pull request as a blocker.
 
 ## What the agent runs (this fork)
 
-The user checks anything that needs the app running and someone watching it.
-This rule overrides the steps above that say to look at the result, such as
-`--demo-shot`.
+The agent writes code and type checks it; the user runs everything else. This
+rule overrides the steps above that say to run the full checks or look at the
+result, such as the definition of done's check list and `--demo-shot`.
 
-- Do not launch the app, take screenshots, or run anything whose result has
-  to be seen. Ask the user to do it: say what to open and what to look for,
-  then wait for their report.
-- Run only checks that give their result as text: type checking and lints
-  (`cargo check`, `cargo clippy`, `cargo fmt --check`) and command-line tests
-  (`cargo test`).
+- Write the code, including its tests, then run only `cargo check` (add
+  `--all-features` when feature-gated code changed). Run nothing else: no
+  `cargo test`, `cargo clippy`, `cargo fmt --check`, `cargo doc`, builds, or
+  launching the app.
+- Finish by handing the user the next steps: the remaining commands from the
+  definition of done, and what to open in the app and look for. Then wait for
+  their report.

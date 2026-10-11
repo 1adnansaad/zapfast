@@ -191,9 +191,14 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   strip of site tabs like the sticker shelves (YouTube, X, Instagram,
   Facebook, TikTok, and a link icon for any other site yt-dlp reads) sits
   over a field: YouTube searches or takes a link, the others take a link.
-  Results show as thumbnails with length and title; a click fetches the video
-  (H.264/AAC MP4, at most 720p, under the 64 MB attachment limit) and sends
-  it to the open chat with the reply that was open, through `send_files`.
+  Results show as cards with thumbnail, length and title, and two buttons.
+  Send fetches the video (H.264/AAC MP4, at most 720p, under the 64 MB
+  attachment limit) and sends it to the open chat with the reply that was
+  open, through `send_files`. Download fetches it into the download folder
+  (the Settings one, else the system's Downloads); a saved card's button
+  then shows its folder, and Send uses the saved file. The picker stays open
+  and the card shows the download's progress, read from yt-dlp's
+  `--progress-template` lines; a failure replaces the card's title.
   The yt-dlp program is run directly, no Rust crate: from `PATH` first, else
   a copy downloaded from yt-dlp's GitHub release when the tab's button is
   clicked, checked against `SHA2-256SUMS`, and updated with `yt-dlp -U` once
@@ -222,7 +227,32 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   pieces may not send. No browser cookies are passed, so posts that need a
   login (common on Instagram and Facebook) fail with yt-dlp's message.
   English-only labels. Tools live in `cache/yt-dlp/`, so clearing the cache
-  means downloading them again.
+  means downloading them again. With ffmpeg the picture and the sound come
+  down one after the other, so the bar steps back a little when the sound
+  starts. A download cannot be cancelled.
+
+### Long text in one-line fields scrolls sideways
+
+- **What:** `bidi::layout_field` laid single-line fields out wrapped at the
+  field's width, so a long search (any picker tab, the chat search, poll
+  answers, names) broke onto a second line. It now lays them out on one row,
+  and egui's single-line `TextEdit` scrolls the text to keep the cursor in
+  view.
+- **Why:** reported on the yt-dlp tab's search; upstream has the same code.
+- **Files:** `src/bidi.rs` (one line, doc, test).
+- **Cost:** none known; worth offering upstream.
+
+### Red dot on the Windows taskbar button
+
+- **What:** the unread overlay on the taskbar button is a solid red dot,
+  antialiased, instead of upstream's pixel-font count (`99+` above 99).
+  `DOT_RADIUS` sets its size.
+- **Why:** the hand-drawn 16px digits looked blocky, more so once Windows
+  scales the overlay for the display.
+- **Files:** `src/notify/badge_windows.rs` (`overlay_rgba` and its test; the
+  glyphs, capsule and label are gone), `docs/_guide/using-zapfast.md`.
+- **Cost:** the button no longer shows how many; the overlay's accessible
+  text still says "N unread messages".
 
 ## Dropped (upstream does it now)
 

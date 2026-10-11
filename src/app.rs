@@ -4380,6 +4380,9 @@ impl App {
                     }
                 }
             }
+            Event::WebVideo { url, fetch } => {
+                self.ytdlp.fetches.insert(url, fetch);
+            }
             Event::Stickers {
                 favorites,
                 packs,
@@ -9022,6 +9025,7 @@ impl App {
                 self.ytdlp = crate::ytdlp::Picker {
                     site,
                     tools: self.ytdlp.tools.take(),
+                    fetches: std::mem::take(&mut self.ytdlp.fetches),
                     ..Default::default()
                 };
             }
@@ -9039,19 +9043,50 @@ impl App {
                     install: Some(kind),
                 });
             }
+            // The picker stays open: the card shows the download.
             Action::SendWebVideo(video) => {
+                use crate::ytdlp::Fetch;
                 if let Some(chat) = self.open_chat.clone() {
-                    self.toast("Fetching the video…");
                     let quoting = self.reply_to.take();
-                    self.backend.send(Command::SendWebVideo {
-                        chat,
-                        url: video.url,
-                        quoting,
-                    });
-                    self.picker = None;
+                    let fetch = match self.ytdlp.fetches.get(&video.url) {
+                        // A saved video goes from its file, not downloaded again.
+                        Some(Fetch::Saved(path)) if path.is_file() => {
+                            self.backend.send(Command::SendFiles {
+                                chat,
+                                paths: vec![path.clone()],
+                                documents: false,
+                                view_once: false,
+                                caption: None,
+                                mentions: Vec::new(),
+                                quoting,
+                            });
+                            Fetch::Sent
+                        }
+                        _ => {
+                            self.backend.send(Command::SendWebVideo {
+                                chat,
+                                url: video.url.clone(),
+                                quoting,
+                            });
+                            Fetch::Running {
+                                send: true,
+                                fraction: None,
+                            }
+                        }
+                    };
+                    self.ytdlp.fetches.insert(video.url, fetch);
                     self.follow_outgoing();
-                    self.refocus_composer(ctx);
                 }
+            }
+            Action::SaveWebVideo(video) => {
+                self.backend.send(Command::SaveWebVideo {
+                    url: video.url.clone(),
+                });
+                let fetch = crate::ytdlp::Fetch::Running {
+                    send: false,
+                    fraction: None,
+                };
+                self.ytdlp.fetches.insert(video.url, fetch);
             }
             Action::PasteImage {
                 width,
@@ -22142,7 +22177,8 @@ mod tests {
     }
 
     #[test]
-    fn a_web_video_carries_the_reply_and_closes_the_picker() {
+    fn a_web_video_carries_the_reply_and_downloads_in_its_card() {
+        use crate::ytdlp::Fetch;
         let root = tempfile::tempdir().unwrap();
         let (mut app, _) = App::headless(AppDirs::under(root.path()), Settings::default());
         let (backend, mut commands, _events) = Backend::recording_with_events();
@@ -22152,22 +22188,44 @@ mod tests {
         app.reply_to = Some("original".into());
         app.picker = Some(PickerTab::YtDlp);
         let url = "https://example.invalid/watch";
-        app.apply(
-            Action::SendWebVideo(crate::ytdlp::WebVideo {
-                id: "Youtube-a1".into(),
-                url: url.into(),
-                title: String::new(),
-                thumbnail: None,
-                duration: None,
-            }),
-            &ctx,
-        );
+        let video = crate::ytdlp::WebVideo {
+            id: "Youtube-a1".into(),
+            url: url.into(),
+            title: String::new(),
+            thumbnail: None,
+            duration: None,
+        };
+        app.apply(Action::SendWebVideo(video.clone()), &ctx);
         assert!(app.reply_to.is_none());
-        assert!(app.picker.is_none());
+        assert_eq!(app.picker, Some(PickerTab::YtDlp));
+        assert_eq!(
+            app.ytdlp.fetches.get(url),
+            Some(&Fetch::Running {
+                send: true,
+                fraction: None
+            })
+        );
         assert!(
             std::iter::from_fn(|| commands.try_recv().ok()).any(|command| matches!(command,
                 Command::SendWebVideo { url: sent, quoting: Some(id), .. }
                     if id.id == "original" && sent == url))
+        );
+
+        // A saved video is sent from its file, not fetched again.
+        let saved = root.path().join("Youtube-a1.mp4");
+        std::fs::write(&saved, b"").unwrap();
+        app.apply_backend_event(
+            Event::WebVideo {
+                url: url.into(),
+                fetch: Fetch::Saved(saved.clone()),
+            },
+            true,
+        );
+        app.apply(Action::SendWebVideo(video), &ctx);
+        assert_eq!(app.ytdlp.fetches.get(url), Some(&Fetch::Sent));
+        assert!(
+            std::iter::from_fn(|| commands.try_recv().ok()).any(|command| matches!(command,
+                Command::SendFiles { paths, .. } if paths == vec![saved.clone()]))
         );
     }
 

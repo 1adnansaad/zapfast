@@ -3171,6 +3171,8 @@ pub enum Action {
     InstallTool(crate::ytdlp::ToolKind),
     /// Fetches a video through yt-dlp and sends it to the open chat.
     SendWebVideo(crate::ytdlp::WebVideo),
+    /// Fetches a video through yt-dlp into the download folder.
+    SaveWebVideo(crate::ytdlp::WebVideo),
     React {
         chat: ChatId,
         message: String,

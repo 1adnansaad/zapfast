@@ -1000,8 +1000,8 @@ that does not say keeps the green icon. Launchers that support
 the Unity Launcher API
 show the unread count as a badge on the app icon: KDE Plasma's taskbar, with
 **Show badges** enabled in the Task Manager settings, and GNOME's Dash to Dock
-or Dash to Panel. Windows overlays a compact unread-message count on ZapFast's
-taskbar button while the window is open, using `99+` above 99. Windows must use
+or Dash to Panel. Windows overlays a red dot on ZapFast's taskbar button while
+the window is open and messages are unread. Windows must use
 its regular taskbar icon size for overlays to appear. The count
 does not count toasts remaining in Windows notification history. On macOS, the
 Dock icon shows the number of unread chats in a red badge. The icon and

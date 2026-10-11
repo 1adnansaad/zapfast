@@ -3,7 +3,7 @@
 //! through `send_files`, like a file from the composer.
 
 use super::*;
-use crate::ytdlp::{Tool, ToolKind};
+use crate::ytdlp::{Fetch, Tool, ToolKind};
 
 impl Worker {
     /// Reports which tools can run, after downloading one if asked. A yt-dlp
@@ -44,35 +44,70 @@ impl Worker {
         });
     }
 
-    /// Fetches the video, then sends it as the composer sends a file, which
-    /// checks the reply and the connection when it goes.
-    pub(super) fn send_web_video(
+    /// Fetches the video, reporting its progress to its card. With a chat it
+    /// is then sent as the composer sends a file, which checks the reply and
+    /// the connection when it goes; without one it is copied to the download
+    /// folder.
+    pub(super) fn fetch_web_video(
         &mut self,
-        chat: ChatId,
         url: String,
-        quoting: Option<crate::model::ReplyTarget>,
+        send: Option<(ChatId, Option<crate::model::ReplyTarget>)>,
     ) {
         let commands = self.commands.clone();
         let dir = self.dirs.tools_dir();
         let into = self.dirs.cache.join("yt-dlp").join("videos");
+        // The folder chosen in Settings itself, else the system's Downloads:
+        // the cache attachments fall back to is no place for a video asked
+        // for, and it came from no chat, so no account or chat folder.
+        let folder = match &self.download_folder {
+            Some(root) => root.clone(),
+            None => directories::UserDirs::new()
+                .and_then(|dirs| dirs.download_dir().map(Path::to_path_buf))
+                .unwrap_or_else(|| self.dirs.media_cache_dir()),
+        };
         tokio::task::spawn_blocking(move || {
-            let next = match crate::ytdlp::download(&dir, &url, &into) {
-                Ok(path) => Command::SendFiles {
-                    chat,
-                    paths: vec![path],
-                    documents: false,
-                    view_once: false,
-                    caption: None,
-                    mentions: Vec::new(),
-                    quoting,
-                },
-                Err(error) => Command::Sent {
-                    chat,
-                    id: String::new(),
-                    error: Some(format!("Could not send the video: {error}")),
-                },
+            let report = |fetch| {
+                let event = Event::WebVideo {
+                    url: url.clone(),
+                    fetch,
+                };
+                let _ = commands.send(Command::YtDlpReport(Box::new(event)));
             };
-            let _ = commands.send(next);
+            let sending = send.is_some();
+            let fetched = crate::ytdlp::download(&dir, &url, &into, |fraction| {
+                report(Fetch::Running {
+                    send: sending,
+                    fraction: Some(fraction),
+                })
+            });
+            let fetch = match (fetched, send) {
+                (Err(error), _) => Fetch::Failed(error),
+                (Ok(path), Some((chat, quoting))) => {
+                    let _ = commands.send(Command::SendFiles {
+                        chat,
+                        paths: vec![path],
+                        documents: false,
+                        view_once: false,
+                        caption: None,
+                        mentions: Vec::new(),
+                        quoting,
+                    });
+                    Fetch::Sent
+                }
+                (Ok(path), None) => save(&path, &folder).map_or_else(Fetch::Failed, Fetch::Saved),
+            };
+            report(fetch);
         });
     }
+}
+
+/// Copies a fetched video into `folder` under its own name. The name is the
+/// site and the video's id, so a copy already there is the same video.
+fn save(path: &Path, folder: &Path) -> Result<PathBuf, String> {
+    let name = path.file_name().ok_or("yt-dlp named no file")?;
+    let target = folder.join(name);
+    std::fs::create_dir_all(folder)
+        .and_then(|()| std::fs::copy(path, &target))
+        .map(|_| target)
+        .map_err(|error| format!("Could not save the video: {error}"))
 }

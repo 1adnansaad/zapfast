@@ -53,12 +53,14 @@ pub fn layout_editor(
 }
 
 /// Single-line field galley. Emoji stay visible; the logical buffer is unchanged.
-pub fn layout_field(ui: &egui::Ui, text: &str, format: &TextFormat, wrap: f32) -> Arc<Galley> {
+/// It never wraps at `_wrap`: a single-line `TextEdit` scrolls a wider galley
+/// sideways to keep the cursor in view.
+pub fn layout_field(ui: &egui::Ui, text: &str, format: &TextFormat, _wrap: f32) -> Arc<Galley> {
     let mut format = format.clone();
     let line_height = ui.fonts_mut(|fonts| fonts.row_height(&format.font_id));
     format.line_height = Some(line_height);
     let mut job = egui::text::LayoutJob::single_section(text.to_owned(), format);
-    job.wrap.max_width = wrap;
+    job.wrap.max_width = f32::INFINITY;
     job.break_on_newline = false;
     job.keep_trailing_whitespace = true;
     let mut galley = ui.fonts_mut(|fonts| fonts.layout_job(job));
@@ -1056,6 +1058,26 @@ mod tests {
             });
             assert!(on_letter, "mark {:?} sits at {}", glyph.chr, glyph.pos.x);
         }
+    }
+
+    #[test]
+    fn a_long_field_stays_on_one_row() {
+        let ctx = egui::Context::default();
+        install_fonts(&ctx);
+        let rows = std::cell::Cell::new(0);
+        let mut output = ctx.run_ui(
+            egui::RawInput {
+                screen_rect: Some(egui::Rect::from_min_size(Pos2::ZERO, vec2(200.0, 80.0))),
+                ..Default::default()
+            },
+            |ui| {
+                let format = TextFormat::simple(FontId::proportional(14.0), Color32::WHITE);
+                let text = "a search much longer than the field it is typed in";
+                rows.set(layout_field(ui, text, &format, 40.0).rows.len());
+            },
+        );
+        output.textures_delta.clear();
+        assert_eq!(rows.get(), 1);
     }
 
     #[test]

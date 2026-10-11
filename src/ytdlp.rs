@@ -3,8 +3,9 @@
 //! fetching a video as an MP4 WhatsApp plays. Everything here blocks; the
 //! worker calls it on blocking threads.
 
+use std::collections::HashMap;
 use std::ffi::OsStr;
-use std::io::{Read, Write};
+use std::io::{BufRead, Read, Write};
 use std::path::{Path, PathBuf};
 use std::process::{Command, Stdio};
 use std::time::{Duration, SystemTime};
@@ -28,6 +29,9 @@ const SORT: &str = "vcodec:h264,res:720,acodec:aac,ext:mp4:m4a";
 const SORT_SINGLE: &str = "proto:https,vcodec:h264,res:720,acodec:aac,ext:mp4:m4a";
 const EXE: &str = std::env::consts::EXE_SUFFIX;
 const MISSING: &str = "yt-dlp is not installed";
+/// The line yt-dlp prints for each step of a download: the bytes so far and
+/// the size, `NA` while it is unknown.
+const PROGRESS: &str = "download:progress %(progress.downloaded_bytes)s %(progress.total_bytes,progress.total_bytes_estimate)s";
 
 const YTDLP_RELEASE: &str = "https://github.com/yt-dlp/yt-dlp/releases/latest/download";
 const YTDLP_ASSET: Option<&str> = if cfg!(all(windows, target_arch = "x86_64")) {
@@ -122,6 +126,22 @@ pub struct WebVideo {
     pub duration: Option<u32>,
 }
 
+/// A video a card fetched, or is fetching, through yt-dlp.
+#[derive(Clone, Debug, PartialEq)]
+pub enum Fetch {
+    /// Downloading, to send to the chat when `send`, else to save. The
+    /// fraction done is `None` until yt-dlp knows the size.
+    Running {
+        send: bool,
+        fraction: Option<f32>,
+    },
+    /// Saved in the download folder.
+    Saved(PathBuf),
+    /// Handed to the chat to send.
+    Sent,
+    Failed(String),
+}
+
 /// What the picker's yt-dlp tab shows.
 #[derive(Debug, Default)]
 pub struct Picker {
@@ -133,6 +153,8 @@ pub struct Picker {
     pub error: Option<String>,
     /// `None` until the worker has looked.
     pub tools: Option<Tools>,
+    /// Each card's download, by the video's page address.
+    pub fetches: HashMap<String, Fetch>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -371,16 +393,78 @@ fn base(program: &Path) -> Command {
     command
 }
 
-/// Runs yt-dlp, returning what it printed or the error it ended with.
-fn run(mut command: Command) -> Result<String, String> {
-    let output = command
-        .output()
+/// Runs yt-dlp, handing each line it prints to `line` as it comes, and
+/// returns all it printed or the error it ended with.
+fn run(mut command: Command, mut line: impl FnMut(&str)) -> Result<String, String> {
+    let mut child = command
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped())
+        .spawn()
         .map_err(|error| format!("Could not run yt-dlp: {error}"))?;
-    if output.status.success() {
-        return Ok(String::from_utf8_lossy(&output.stdout).into_owned());
+    let mut stderr = child.stderr.take().expect("stderr is piped");
+    // Read on its own thread, so neither pipe fills while the other is read.
+    let errors = std::thread::spawn(move || {
+        let mut bytes = Vec::new();
+        let _ = stderr.read_to_end(&mut bytes);
+        String::from_utf8_lossy(&bytes).into_owned()
+    });
+    let stdout = child.stdout.take().expect("stdout is piped");
+    let mut printed = String::new();
+    for next in std::io::BufReader::new(stdout)
+        .split(b'\n')
+        .map_while(Result::ok)
+    {
+        let next = String::from_utf8_lossy(&next);
+        let next = next.trim_end();
+        line(next);
+        printed.push_str(next);
+        printed.push('\n');
     }
-    Err(failure(&String::from_utf8_lossy(&output.stderr))
-        .unwrap_or_else(|| format!("yt-dlp stopped ({})", output.status)))
+    let status = child
+        .wait()
+        .map_err(|error| format!("Could not run yt-dlp: {error}"))?;
+    let stderr = errors.join().unwrap_or_default();
+    if status.success() {
+        return Ok(printed);
+    }
+    Err(failure(&stderr).unwrap_or_else(|| format!("yt-dlp stopped ({status})")))
+}
+
+/// How far a download is, across the pieces yt-dlp fetches one after another
+/// (the picture, then the sound, when ffmpeg joins them).
+#[derive(Default)]
+struct Progress {
+    /// Bytes of the pieces already done.
+    finished: f64,
+    /// The current piece's bytes so far and size.
+    current: (f64, f64),
+    /// The whole percent last reported.
+    shown: Option<u32>,
+}
+
+impl Progress {
+    /// Reads a [`PROGRESS`] line, returning the fraction done when it has
+    /// moved by a whole percent. A piece's sound starts the count again, and
+    /// its size is unknown until then, so the bar steps back a little there.
+    fn read(&mut self, line: &str) -> Option<f32> {
+        let mut words = line.strip_prefix("progress ")?.split_whitespace();
+        let done: f64 = words.next()?.parse().ok()?;
+        let size: f64 = words.next()?.parse().ok()?;
+        if done < self.current.0 {
+            self.finished += self.current.1;
+        }
+        self.current = (done, size);
+        let total = self.finished + size;
+        if total <= 0.0 {
+            return None;
+        }
+        let fraction = ((self.finished + done) / total).clamp(0.0, 1.0);
+        let percent = (fraction * 100.0) as u32;
+        (self.shown != Some(percent)).then(|| {
+            self.shown = Some(percent);
+            fraction as f32
+        })
+    }
 }
 
 /// The last `ERROR:` line yt-dlp printed, else its last line.
@@ -416,7 +500,7 @@ pub fn find(dir: &Path, query: &str, thumbs: &Path) -> Result<Vec<WebVideo>, Str
             "--",
         ])
         .arg(&target);
-    let found = parse(&run(command)?)?;
+    let found = parse(&run(command, |_| {})?)?;
     if found.is_empty() {
         return Err("Nothing found".to_owned());
     }
@@ -525,8 +609,14 @@ fn picture_extension(url: &str) -> &'static str {
         .unwrap_or("jpg")
 }
 
-/// Fetches the video at `url` into `into` as an MP4 small enough to send.
-pub fn download(dir: &Path, url: &str, into: &Path) -> Result<PathBuf, String> {
+/// Fetches the video at `url` into `into` as an MP4 small enough to send,
+/// handing `progress` the fraction done as it goes.
+pub fn download(
+    dir: &Path,
+    url: &str,
+    into: &Path,
+    mut progress: impl FnMut(f32),
+) -> Result<PathBuf, String> {
     let ytdlp = program(dir, "yt-dlp").ok_or(MISSING)?;
     std::fs::create_dir_all(into).map_err(|error| error.to_string())?;
     forget_old(into);
@@ -540,6 +630,11 @@ pub fn download(dir: &Path, url: &str, into: &Path) -> Result<PathBuf, String> {
             "--no-simulate",
             "--print",
             "after_move:filepath",
+            // --print hides progress unless asked; one line per step.
+            "--progress",
+            "--newline",
+            "--progress-template",
+            PROGRESS,
             "--max-filesize",
             &limit,
             "-o",
@@ -557,7 +652,12 @@ pub fn download(dir: &Path, url: &str, into: &Path) -> Result<PathBuf, String> {
         }
     }
     command.arg("--").arg(url);
-    let printed = run(command)?;
+    let mut steps = Progress::default();
+    let printed = run(command, |line| {
+        if let Some(fraction) = steps.read(line) {
+            progress(fraction);
+        }
+    })?;
     let too_large = || {
         format!(
             "yt-dlp skipped it. It may be larger than {limit}B, the most WhatZap sends; try a shorter video."
@@ -566,7 +666,7 @@ pub fn download(dir: &Path, url: &str, into: &Path) -> Result<PathBuf, String> {
     let path = printed
         .lines()
         .map(str::trim)
-        .rfind(|line| !line.is_empty())
+        .rfind(|line| !line.is_empty() && !line.starts_with("progress "))
         .map(PathBuf::from)
         .ok_or_else(too_large)?;
     let size = std::fs::metadata(&path)
@@ -669,6 +769,20 @@ mod tests {
             Some("https://pbs.twimg.com/thumb.jpg")
         );
         assert!(parse("not json").is_err());
+    }
+
+    #[test]
+    fn progress_runs_across_the_picture_and_the_sound() {
+        let mut steps = Progress::default();
+        assert_eq!(steps.read("/cache/Youtube-a1.mp4"), None);
+        assert_eq!(steps.read("progress 0 NA"), None);
+        assert_eq!(steps.read("progress 0 800"), Some(0.0));
+        assert_eq!(steps.read("progress 1 800"), None, "under a whole percent");
+        assert_eq!(steps.read("progress 400 800"), Some(0.5));
+        assert_eq!(steps.read("progress 800 800"), Some(1.0));
+        // The sound starts at 0 with its own size: 800 of 1000 is done.
+        assert_eq!(steps.read("progress 0 200.0"), Some(0.8));
+        assert_eq!(steps.read("progress 200 200"), Some(1.0));
     }
 
     #[test]
