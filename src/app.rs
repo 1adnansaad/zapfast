@@ -8507,6 +8507,17 @@ impl App {
                     self.backend.send(Command::PickFiles { chat, documents });
                 }
             }
+            Action::AttachCopiedPaths => {
+                let text = arboard::Clipboard::new()
+                    .and_then(|mut clipboard| clipboard.get_text())
+                    .unwrap_or_default();
+                let paths = copied_paths(&text);
+                if paths.is_empty() {
+                    self.toast_error("The clipboard holds no path to a file");
+                } else {
+                    self.stage_files(paths);
+                }
+            }
             Action::SetComposerTools(open) => {
                 self.composer_tools_open = open;
                 if open {
@@ -12378,6 +12389,15 @@ fn clipboard_contents(
 /// The clipboard's text, if it holds any.
 fn clipboard_text() -> Option<String> {
     arboard::Clipboard::new().ok()?.get_text().ok()
+}
+
+/// Existing files named in clipboard text, one per line, with or without the
+/// quotes Explorer's "Copy as path" puts around each.
+fn copied_paths(text: &str) -> Vec<PathBuf> {
+    text.lines()
+        .map(|line| PathBuf::from(line.trim().trim_matches('"')))
+        .filter(|path| path.is_file())
+        .collect()
 }
 
 /// Files copied to the clipboard by a file manager.
@@ -16951,6 +16971,23 @@ mod tests {
             why,
             "no copied files (format unavailable), no picture (empty)"
         );
+    }
+
+    #[test]
+    fn copied_paths_read_explorers_quoted_lines() {
+        let directory = tempfile::tempdir().unwrap();
+        let pdf = directory.path().join("a b.pdf");
+        let zip = directory.path().join("c.zip");
+        std::fs::write(&pdf, b"%PDF-fixture").unwrap();
+        std::fs::write(&zip, b"PK-fixture").unwrap();
+        let text = format!(
+            "\"{}\"\r\n{}\r\n\"{}\"\r\nnot a path",
+            pdf.display(),
+            zip.display(),
+            directory.path().display(),
+        );
+        assert_eq!(copied_paths(&text), [pdf, zip], "folders and text are skipped");
+        assert!(copied_paths("").is_empty());
     }
 
     #[test]

@@ -273,6 +273,8 @@ when pressed straight after pasting, and a quick Ctrl+V tap pastes a picture
 just as a held one does. Other text fields, such as search, paste only text,
 and nothing is staged while a menu, the picker, a recording, or a full-size
 video is open.
+**+** > **Paste file path** attaches the files whose full paths are on the
+clipboard as text, one per line, such as Windows Explorer's **Copy as path**.
 Staged files open a review area below the chat header. The selected photo
 is shown large and fitted whole; other files show their name and size. Click
 a tile along the bottom to review another file, or **+** to add more. The
@@ -976,6 +978,11 @@ show their badge, hovering names a chat, clicking opens it, and `Ctrl+B` or
 the button under **Calls** brings the full list back.
 In a short window, scroll the rail to reach its lower buttons. Tab and
 Shift+Tab bring the focused button into view, too.
+
+`F11` fills the screen and hides the title bar, as in a browser. On Windows and
+Linux, point at the top edge of the screen and a strip slides down with
+**Minimize**, **Exit full screen** and **Close**; it leaves once the pointer
+moves below it. `F11` again returns to the window.
 
 ## Notifications and the tray
 

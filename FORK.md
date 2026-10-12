@@ -254,6 +254,34 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
 - **Cost:** the button no longer shows how many; the overlay's accessible
   text still says "N unread messages".
 
+### Paste file path in the plus menu
+
+- **What:** the composer's **+** menu has "Paste file path" under "Send
+  files". It reads the clipboard's text, one path per line with or without
+  quotes (Windows Explorer's "Copy as path"), and stages every line that names
+  an existing file, as the file picker would. Nothing usable shows a toast.
+- **Why:** attach a file whose path I already copied without browsing to it.
+- **Files:** `src/model.rs` (`Action::AttachCopiedPaths`),
+  `src/ui/conversation.rs` (`composer_tools_menu`), `src/app.rs` (the action,
+  `copied_paths` and its test), `docs/_guide/using-zapfast.md`.
+- **Cost:** English-only label. Folders are skipped. Ctrl+V of a copied path
+  still pastes it as text, as upstream does.
+
+### F11 full screen
+
+- **What:** F11 toggles full screen (winit's borderless one). On Windows and
+  Linux the title bar goes with it, so, as in Edge, the pointer at the top
+  edge slides down a 32pt strip with "WhatZap", Minimize, Exit full screen
+  and Close; it slides away once the pointer moves below it. Close goes
+  through `Action::CloseWindow`, so it keeps WhatZap in the tray as the
+  native button does. macOS keeps its own reveal.
+- **Why:** a distraction-free window, like Edge's F11.
+- **Files:** `src/ui/mod.rs` (`full_screen`, `strip_shown`, their tests),
+  `src/ui/keys.rs` (`SHORTCUTS` row), `docs/_guide/using-zapfast.md`.
+- **Cost:** English-only labels. No "press F11 to exit" hint on entry. The
+  strip is drawn by the app, not Windows, so it has no snap layouts or
+  window menu.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream

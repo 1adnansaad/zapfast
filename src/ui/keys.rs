@@ -1132,6 +1132,10 @@ pub const SHORTCUTS: &[(&str, &str)] = &[
     ),
     ("Ctrl+,", "Settings"),
     ("Ctrl++ / Ctrl+-", "Zoom in / out"),
+    (
+        "F11",
+        "Full screen (point at the top edge for the window buttons)",
+    ),
     ("Ctrl+0", "Search chats and messages"),
     ("← / →", "Previous / next item in the media viewer"),
     ("? / Ctrl+/", "Keyboard shortcuts (? when not typing)"),

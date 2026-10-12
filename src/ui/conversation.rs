@@ -2322,6 +2322,9 @@ fn composer_tools_menu(app: &mut App, chat: &Chat, plus: &egui::Response) {
                 if widgets::menu_item(ui, &app.palette, Some(Icon::FileText), &document) {
                     app.actions.push(Action::Attach { documents: true });
                 }
+                if widgets::menu_item(ui, &app.palette, Some(Icon::Copy), "Paste file path") {
+                    app.actions.push(Action::AttachCopiedPaths);
+                }
                 let send_location = crate::i18n::gettext(app.locale, "Send location");
                 if widgets::menu_item(ui, &app.palette, Some(Icon::MapPin), &send_location) {
                     app.actions

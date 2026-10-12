@@ -3049,6 +3049,9 @@ pub enum Action {
     Attach {
         documents: bool,
     },
+    /// Stages the files whose paths the clipboard holds as text, as Windows
+    /// Explorer's "Copy as path" leaves them.
+    AttachCopiedPaths,
     /// Opens or closes the composer tools menu.
     SetComposerTools(bool),
     SendFiles(Vec<PathBuf>),

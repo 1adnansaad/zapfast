@@ -47,6 +47,7 @@ pub fn show(app: &mut App, ui: &mut egui::Ui) {
     picker::release_gif_animations(app, ctx);
     // The message list sets it again when it is drawn with focus.
     app.messages_focused = false;
+    full_screen(app, ctx);
     // Locked, nothing else is drawn: no chat list, no messages, no dialogs,
     // no toasts, and no shortcut reaches them.
     if app.app_lock.is_locked() {
@@ -800,6 +801,93 @@ fn toasts(app: &mut App, ctx: &egui::Context) {
             }
         });
     app.actions.extend(actions);
+}
+
+/// Height of the strip that slides down over a full-screen window.
+const FULL_SCREEN_STRIP: f32 = 32.0;
+
+/// F11 toggles full screen, which takes the title bar and its buttons away.
+/// As in Edge, the pointer at the top edge slides a strip down with them, and
+/// it leaves once the pointer moves below it. macOS reveals its own. A call
+/// filling the screen leaves it through the call's own toggle, so the call's
+/// button keeps agreeing with the window.
+fn full_screen(app: &mut App, ctx: &egui::Context) {
+    let on = ctx.input(|input| input.viewport().fullscreen.unwrap_or(false));
+    let leave = |app: &mut App| {
+        if app.call_fullscreen {
+            app.actions.push(Action::ToggleCallFullscreen);
+        } else {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(false));
+        }
+    };
+    if ctx.input_mut(|input| keys::take_plain(input, egui::Key::F11)) {
+        if on {
+            leave(app);
+        } else {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(true));
+        }
+    }
+    let id = egui::Id::new("full-screen-strip");
+    let was = ctx.data(|data| data.get_temp::<bool>(id).unwrap_or(false));
+    let pointer = ctx.input(|input| input.pointer.latest_pos());
+    let shown = on && !theme::macos_chrome(ctx) && strip_shown(was, pointer);
+    ctx.data_mut(|data| data.insert_temp(id, shown));
+    let t = ctx.animate_bool_with_time(id, shown, 0.12);
+    if t == 0.0 {
+        return;
+    }
+    let palette = app.palette;
+    let screen = ctx.content_rect();
+    egui::Area::new(id)
+        .order(egui::Order::Tooltip)
+        .fixed_pos(egui::pos2(
+            screen.left(),
+            screen.top() - FULL_SCREEN_STRIP * (1.0 - t),
+        ))
+        .show(ctx, |ui| {
+            // Clicks between the buttons stop here, not on the chat below.
+            let (rect, _) = ui.allocate_exact_size(
+                vec2(screen.width(), FULL_SCREEN_STRIP),
+                egui::Sense::click(),
+            );
+            ui.painter().rect_filled(rect, 0.0, palette.panel);
+            ui.painter().hline(
+                rect.x_range(),
+                rect.bottom() - 0.5,
+                Stroke::new(1.0, palette.outline),
+            );
+            let mut row = ui.new_child(
+                egui::UiBuilder::new()
+                    .max_rect(rect.shrink2(vec2(8.0, 0.0)))
+                    .layout(egui::Layout::right_to_left(egui::Align::Center)),
+            );
+            let button = |ui: &mut egui::Ui, icon: Icon, tooltip: &str| {
+                theme::icon_button(ui, icon, 16.0, palette.secondary, palette.text, tooltip)
+                    .clicked()
+            };
+            if button(&mut row, Icon::X, "Close") {
+                app.actions.push(Action::CloseWindow);
+            }
+            if button(&mut row, Icon::Minimize, "Exit full screen (F11)") {
+                leave(app);
+            }
+            if button(&mut row, Icon::Minus, "Minimize") {
+                ctx.send_viewport_cmd(egui::ViewportCommand::Minimized(true));
+            }
+            row.with_layout(egui::Layout::left_to_right(egui::Align::Center), |ui| {
+                ui.label(
+                    egui::RichText::new("WhatZap")
+                        .font(theme::regular(13.0))
+                        .color(palette.secondary),
+                );
+            });
+        });
+}
+
+/// Whether the full-screen strip shows: the pointer at the top edge brings
+/// it down, and it stays while the pointer is over it.
+fn strip_shown(was: bool, pointer: Option<egui::Pos2>) -> bool {
+    pointer.is_some_and(|pos| pos.y < 2.0 || (was && pos.y < FULL_SCREEN_STRIP))
 }
 
 /// Draggable space across the top of the linking and lock screens, which
@@ -1770,6 +1858,87 @@ mod idle_tests {
         assert!(
             !shown.iter().any(|text| text == "Message 0"),
             "the oldest never flashes: {shown:?}"
+        );
+    }
+}
+
+#[cfg(test)]
+mod full_screen_tests {
+    use super::*;
+
+    #[test]
+    fn the_strip_comes_down_at_the_top_edge_and_leaves_below_it() {
+        let at = |y| Some(egui::pos2(300.0, y));
+        assert!(strip_shown(false, at(0.0)));
+        assert!(!strip_shown(false, at(10.0)), "only the edge reveals it");
+        assert!(strip_shown(true, at(10.0)), "it stays under the pointer");
+        assert!(!strip_shown(true, at(FULL_SCREEN_STRIP + 1.0)));
+        assert!(!strip_shown(true, None), "the pointer left the window");
+    }
+
+    #[test]
+    fn f11_toggles_full_screen() {
+        let root = tempfile::tempdir().unwrap();
+        let mut app = App::headless(
+            crate::paths::AppDirs::under(root.path()),
+            crate::settings::Settings::default(),
+        )
+        .0;
+        let ctx = egui::Context::default();
+        for on in [false, true] {
+            let mut input = egui::RawInput {
+                events: vec![egui::Event::Key {
+                    key: egui::Key::F11,
+                    physical_key: None,
+                    pressed: true,
+                    repeat: false,
+                    modifiers: egui::Modifiers::NONE,
+                }],
+                ..Default::default()
+            };
+            input
+                .viewports
+                .get_mut(&egui::ViewportId::ROOT)
+                .unwrap()
+                .fullscreen = Some(on);
+            let mut output = ctx.run_ui(input, |ui| full_screen(&mut app, ui.ctx()));
+            output.textures_delta.clear();
+            let commands = &output.viewport_output[&egui::ViewportId::ROOT].commands;
+            assert!(
+                commands
+                    .iter()
+                    .any(|command| *command == egui::ViewportCommand::Fullscreen(!on)),
+                "{commands:?}"
+            );
+        }
+        // A call filling the screen leaves through its own toggle.
+        app.call_fullscreen = true;
+        let mut input = egui::RawInput {
+            events: vec![egui::Event::Key {
+                key: egui::Key::F11,
+                physical_key: None,
+                pressed: true,
+                repeat: false,
+                modifiers: egui::Modifiers::NONE,
+            }],
+            ..Default::default()
+        };
+        input
+            .viewports
+            .get_mut(&egui::ViewportId::ROOT)
+            .unwrap()
+            .fullscreen = Some(true);
+        let mut output = ctx.run_ui(input, |ui| full_screen(&mut app, ui.ctx()));
+        output.textures_delta.clear();
+        assert!(matches!(
+            app.actions.as_slice(),
+            [Action::ToggleCallFullscreen]
+        ));
+        assert!(
+            !output.viewport_output[&egui::ViewportId::ROOT]
+                .commands
+                .iter()
+                .any(|command| matches!(command, egui::ViewportCommand::Fullscreen(_)))
         );
     }
 }

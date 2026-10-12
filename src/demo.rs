@@ -22725,9 +22725,10 @@ mod tests {
                 .expect("the plus button is a tab stop");
             (id, ctx.read_response(id).unwrap().rect.center())
         };
-        // Row 0 sends files, row 1 documents, row 2 sends a location, row 3
-        // creates a poll.
-        for row in [0.0, 1.0, 2.0, 3.0] {
+        // Row 0 sends files, row 1 documents, row 3 sends a location, row 4
+        // creates a poll. Row 2 is the fork's Paste file path (FORK.md),
+        // left out: it reads the system clipboard.
+        for row in [0.0, 1.0, 3.0, 4.0] {
             let mut app = app();
             app.settings.show_shortcut_hints = false;
             let chat = app.open_chat.clone().unwrap();
@@ -22747,7 +22748,7 @@ mod tests {
             );
             let item = egui::pos2(
                 menu.center().x,
-                menu.top() + menu.height() * (1.0 + 2.0 * row) / 8.0,
+                menu.top() + menu.height() * (1.0 + 2.0 * row) / 10.0,
             );
             click(&mut app, &ctx, item);
             assert!(
@@ -22768,7 +22769,7 @@ mod tests {
             } else if row == 1.0 {
                 assert_eq!(picked, Some(true), "documents open the file picker");
                 assert_eq!(app.dialog, None);
-            } else if row == 2.0 {
+            } else if row == 3.0 {
                 assert_eq!(picked, None);
                 assert_eq!(app.dialog, Some(crate::model::Dialog::SendLocation(chat)));
             } else {
