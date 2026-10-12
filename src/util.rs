@@ -701,6 +701,19 @@ fn country_code_len(digits: &str) -> usize {
     }
 }
 
+/// The digits of text that reads as a phone number, as people paste them:
+/// `+1 (555) 123-4567`, `44.20.7946.0000`, or with the `00` international
+/// prefix, which no country code starts with.
+pub fn typed_number(text: &str) -> Option<String> {
+    let text = text.trim();
+    if !text.chars().all(|c| c.is_ascii_digit() || " +-().".contains(c)) {
+        return None;
+    }
+    let digits: String = text.chars().filter(char::is_ascii_digit).collect();
+    let digits = digits.strip_prefix("00").unwrap_or(&digits);
+    (!digits.is_empty()).then(|| digits.to_owned())
+}
+
 /// Formats Brazil's `+55` numbers as `(DDD) XXXX-XXXX` or `(DDD) XXXXX-XXXX`.
 ///
 /// WhatsApp stores direct-chat ids in international form, while Brazilian
@@ -1241,6 +1254,17 @@ mod tests {
         // A French number of the wrong length keeps the general grouping.
         assert_eq!(phone("3361234567"), "+33 612 345 67");
         assert_eq!(phone(""), "");
+    }
+
+    #[test]
+    fn pasted_numbers_read_as_digits() {
+        let number = |text| super::typed_number(text);
+        assert_eq!(number("+1 (555) 123-4567").as_deref(), Some("15551234567"));
+        assert_eq!(number(" 0044 20 7946 0000 ").as_deref(), Some("442079460000"));
+        assert_eq!(number("923001234567").as_deref(), Some("923001234567"));
+        assert_eq!(number("Bob 2"), None);
+        assert_eq!(number("+ -"), None);
+        assert_eq!(number(""), None);
     }
 
     #[test]

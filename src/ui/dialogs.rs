@@ -509,9 +509,24 @@ fn new_chat(app: &mut App, ui: &mut egui::Ui) {
         search.request_focus();
     }
     let needle = crate::util::search_key(app.new_chat_search.trim());
-    let contacts = contact_choices(app, &needle);
+    // Fork: a typed or pasted number matches contacts by its digits, and one
+    // long enough can be messaged even when it is no contact (FORK.md). Its
+    // row heads the list, so it is the match Enter opens.
+    let number = crate::util::typed_number(&app.new_chat_search);
+    let contacts = contact_choices(app, number.as_deref().unwrap_or(&needle));
+    // A listed contact with exactly this number already opens its chat, and
+    // ourselves and locked chats stay out, as they do from the list.
+    let number = number.filter(|digits| {
+        let id = format!("{digits}@s.whatsapp.net");
+        digits.len() >= 7
+            && app.me.as_deref() != Some(id.as_str())
+            && !app.chat(&id).is_some_and(|chat| chat.locked)
+            && !contacts.iter().any(|contact| contact.id == id)
+    });
     let offer_self = app.offers_self(&needle);
-    if let Some(contact) = contacts
+    if let Some(digits) = number.as_ref().filter(|_| open_first) {
+        super::chats::message_number(app, digits);
+    } else if let Some(contact) = contacts
         .first()
         .filter(|_| open_first && !needle.is_empty())
     {
@@ -525,10 +540,10 @@ fn new_chat(app: &mut App, ui: &mut egui::Ui) {
     // The list is as tall as its rows, up to the space the dialog has, so a
     // search with few matches gives a short list and many give a full one.
     // Its height comes from this frame's rows, not last frame's size.
-    let listed = if contacts.is_empty() && !offer_self {
+    let listed = if contacts.is_empty() && !offer_self && number.is_none() {
         1
     } else {
-        contacts.len() + usize::from(offer_self)
+        contacts.len() + usize::from(offer_self) + usize::from(number.is_some())
     };
     let rows = 2 + listed;
     let spacing = ui.spacing().item_spacing.y;
@@ -540,6 +555,9 @@ fn new_chat(app: &mut App, ui: &mut egui::Ui) {
         .max_height(list_height)
         .auto_shrink([false, true])
         .show(ui, |ui| {
+            if let Some(digits) = &number {
+                super::chats::number_row(app, ui, digits);
+            }
             // New group and Add contact head the list, then "Message
             // yourself", as on the phone.
             let new_group = crate::i18n::gettext(app.locale, "New group");
@@ -553,7 +571,7 @@ fn new_chat(app: &mut App, ui: &mut egui::Ui) {
             if offer_self {
                 super::chats::self_row(app, ui);
             }
-            if contacts.is_empty() && !offer_self {
+            if contacts.is_empty() && !offer_self && number.is_none() {
                 // No row is drawn to forget the one scrolled into view last.
                 ui.ctx()
                     .data_mut(|data| data.remove::<String>(super::chats::revealed_row_id()));
@@ -565,7 +583,7 @@ fn new_chat(app: &mut App, ui: &mut egui::Ui) {
                 );
             }
             for (index, contact) in contacts.into_iter().enumerate() {
-                let selected = index == 0 && !needle.is_empty();
+                let selected = index == 0 && !needle.is_empty() && number.is_none();
                 ui.push_id(&contact.id, |ui| {
                     super::chats::contact_row(app, ui, &contact, selected)
                 });

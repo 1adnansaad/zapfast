@@ -302,6 +302,24 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   "patch was not used"): rebase the commit onto the new tag or drop it once
   tray-icon fixes this. Worth offering upstream (tauri-apps/tray-icon).
 
+### Message any number from New chat
+
+- **What:** typing or pasting a number into New chat's search (`+1 (555)
+  123-4567`, `0044 ...`, plain digits) lists contacts by its digits, and from
+  7 digits offers a "Message this number" row on top. Clicking it, or Enter in
+  the field, runs New contact's Message (`Action::NewContact` without a name):
+  WhatsApp's registration check, then the chat opens, or a "not on WhatsApp"
+  toast. No row for a listed contact's exact number, ourselves, or a locked
+  chat.
+- **Why:** start a chat with a number not in contacts without opening Add
+  contact first.
+- **Files:** `src/util.rs` (`typed_number` and its test), `src/ui/chats.rs`
+  (`number_row`, `message_number`; `person_row` takes `fetch_picture`),
+  `src/ui/dialogs.rs` (`new_chat`), `docs/_guide/using-zapfast.md`.
+- **Cost:** English-only label. A local number without its country code
+  (`0300...`) is not converted and fails the check. No profile picture on the
+  row, so typing never asks for a stranger's.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream

@@ -1390,7 +1390,7 @@ fn hit_row(app: &mut App, ui: &mut egui::Ui, hit: &Message) {
 pub(super) fn contact_row(app: &mut App, ui: &mut egui::Ui, contact: &Contact, selected: bool) {
     let name = app.display_name(&contact.id);
     let detail = crate::model::phone_of(&contact.id).map(crate::util::phone);
-    if person_row(app, ui, &contact.id, &name, detail.as_deref(), selected).clicked() {
+    if person_row(app, ui, &contact.id, true, &name, detail.as_deref(), selected).clicked() {
         app.actions.push(Action::StartChat {
             id: contact.id.clone(),
             name,
@@ -1406,7 +1406,7 @@ pub(super) fn self_row(app: &mut App, ui: &mut egui::Ui) {
     };
     let name = app.self_title();
     let detail = crate::i18n::gettext(app.locale, "Message yourself");
-    if person_row(app, ui, &me, &name, Some(detail.as_ref()), false).clicked() {
+    if person_row(app, ui, &me, true, &name, Some(detail.as_ref()), false).clicked() {
         app.actions.push(Action::MessageYourself);
     }
 }
@@ -1454,10 +1454,41 @@ pub(super) fn action_row(app: &App, ui: &mut egui::Ui, icon: Icon, label: &str) 
     response.on_hover_cursor(egui::CursorIcon::PointingHand)
 }
 
+/// A number typed or pasted into New chat. Clicking asks WhatsApp whether it
+/// is registered and opens the chat if so, as New contact's Message does.
+/// No profile picture is fetched: every keystroke would ask for a stranger's.
+/// It heads the list whenever it shows, so it is always the highlighted match
+/// Enter opens.
+pub(super) fn number_row(app: &mut App, ui: &mut egui::Ui, digits: &str) {
+    let id = format!("{digits}@s.whatsapp.net");
+    let name = crate::util::phone(digits);
+    let detail = if app.new_contact_pending {
+        "Checking the number…"
+    } else {
+        "Message this number"
+    };
+    let detail = crate::i18n::gettext(app.locale, detail);
+    if person_row(app, ui, &id, false, &name, Some(detail.as_ref()), true).clicked() {
+        message_number(app, digits);
+    }
+}
+
+pub(super) fn message_number(app: &mut App, digits: &str) {
+    if !app.new_contact_pending {
+        app.actions.push(Action::NewContact {
+            phone: digits.to_owned(),
+            first: String::new(),
+            last: String::new(),
+            to_phone: None,
+        });
+    }
+}
+
 fn person_row(
     app: &mut App,
     ui: &mut egui::Ui,
     id: &str,
+    fetch_picture: bool,
     name: &str,
     detail: Option<&str>,
     selected: bool,
@@ -1499,7 +1530,7 @@ fn person_row(
         }
         let avatar_rect =
             Rect::from_center_size(pos2(rect.left() + 38.0, rect.center().y), Vec2::splat(48.0));
-        let picture = app.avatar(id);
+        let picture = fetch_picture.then(|| app.avatar(id)).flatten();
         widgets::paint_avatar(ui, &palette, avatar_rect, name, id, picture.as_deref());
         let left = rect.left() + 76.0;
         let name_line = widgets::line(
