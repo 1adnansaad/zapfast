@@ -264,6 +264,9 @@ epaint_default_fonts = { git = "https://github.com/crmne/egui", rev = "06da5ee2b
 # Wayland clipboard MIME bytes are read on that one data device (crmne/winit#7),
 # and macOS's accent picker replaces the typed character (crmne/winit#5).
 winit = { git = "https://github.com/crmne/winit", rev = "dc09323e032a405a8a165aeda9ceb48b3251cebd" }
+# Fork only (FORK.md): tray-icon 0.25.1 with the Windows tray menu kept off
+# the taskbar, which an auto-hidden taskbar otherwise covers.
+tray-icon = { git = "https://github.com/1adnansaad/tray-icon", rev = "84edf737a05fdbd290b4e46daec87f0ac3b366c3" }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 zbus-secret-service-keyring-store = { version = "1.0.1", features = ["rt-tokio-crypto-rust"] }

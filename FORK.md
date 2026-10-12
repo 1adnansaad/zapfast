@@ -282,6 +282,26 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   strip is drawn by the app, not Windows, so it has no snap layouts or
   window menu.
 
+### Tray menu kept off the taskbar (patched tray-icon)
+
+- **What:** `[patch.crates-io]` swaps tray-icon 0.25.1 (used through
+  fastframe-tray, and directly for the macOS menu bar) for a copy whose
+  Windows `show_tray_menu` calls `TrackPopupMenuEx` and excludes the
+  rectangle of the taskbar (or overflow flyout) under the click. The menu
+  then opens just above the taskbar instead of bottom-aligned at the
+  pointer, partly over it.
+- **Why:** with the taskbar set to auto-hide, the taskbar that pops up for
+  the click stays above the menu and covered its bottom.
+- **Files:** `Cargo.toml` (the patch line), `Cargo.lock`; the change itself
+  is one commit (84edf73) on branch `menu-above-taskbar` of
+  [1adnansaad/tray-icon](https://github.com/1adnansaad/tray-icon), made from
+  upstream's tag `tray-icon-v0.25.1` (local clone: `D:\dev\tray-icon`).
+- **Cost:** goes against AGENTS.md's "do not patch upstream crates" rule, by
+  choice. Keep that branch on GitHub: builds fetch the pinned rev. A fastframe
+  or tray-icon bump past 0.25 makes the patch stop applying (Cargo warns
+  "patch was not used"): rebase the commit onto the new tag or drop it once
+  tray-icon fixes this. Worth offering upstream (tauri-apps/tray-icon).
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream
