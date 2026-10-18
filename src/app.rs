@@ -593,6 +593,9 @@ pub struct App {
     pub dropping: bool,
     /// Where the Ctrl/Cmd+V shortcut stands across frames.
     paste_keys: PasteKeys,
+    /// Text pasted into an empty composer that names only files, with those
+    /// files: the composer offers to attach them while it holds that text.
+    pub path_suggestion: Option<(String, Vec<PathBuf>)>,
     /// Open emoji, GIF, or sticker picker tab.
     pub picker: Option<PickerTab>,
     /// Picker anchor at the composer button.
@@ -1642,6 +1645,7 @@ impl App {
             sweep: None,
             dropping: false,
             paste_keys: PasteKeys::default(),
+            path_suggestion: None,
             picker: None,
             picker_anchor: None,
             picker_search: String::new(),
@@ -11929,6 +11933,12 @@ impl App {
         }
         ctx.data_mut(|data| data.insert_temp(frame_id, (frame, false)));
         let requested = ctx.input(|input| self.paste_keys.read(input));
+        let pasted = ctx.input(|input| {
+            input.events.iter().find_map(|event| match event {
+                egui::Event::Paste(text) => Some(text.clone()),
+                _ => None,
+            })
+        });
         // A message or button may retain keyboard focus after clicking it.
         // Other text fields still own their clipboard input.
         let editing_text = ctx.text_edit_focused();
@@ -11938,8 +11948,7 @@ impl App {
                     && !memory.has_focus(egui::Id::new("search"))
                     && !memory.has_focus(egui::Id::new("chat-search")))
         });
-        if requested
-            && composing
+        let writable = composing
             && self.chat_view()
             && self.dialog.is_none()
             && self.image_preview.is_none()
@@ -11952,7 +11961,9 @@ impl App {
                 .open_chat
                 .as_deref()
                 .and_then(|id| self.chat(id))
-                .is_some_and(Chat::can_send)
+                .is_some_and(Chat::can_send);
+        if requested
+            && writable
             && let Some(contents) = read_clipboard()
         {
             ctx.data_mut(|data| data.insert_temp(frame_id, (frame, true)));
@@ -11965,6 +11976,15 @@ impl App {
                     .retain(|event| !matches!(event, egui::Event::Paste(_)))
             });
             self.stage_clipboard(ctx, contents);
+        } else if writable
+            && self.composer.trim().is_empty()
+            && let Some(pasted) = pasted
+            && let Some(paths) = only_copied_paths(&pasted)
+        {
+            // Fork: Explorer's "Copy as path" is plain text, pasted as it is;
+            // an empty composer offers to attach what it names instead
+            // (FORK.md).
+            self.path_suggestion = Some((pasted, paths));
         }
     }
 
@@ -12394,10 +12414,28 @@ fn clipboard_text() -> Option<String> {
 /// Existing files named in clipboard text, one per line, with or without the
 /// quotes Explorer's "Copy as path" puts around each.
 fn copied_paths(text: &str) -> Vec<PathBuf> {
+    text.lines().filter_map(copied_path).collect()
+}
+
+/// The files named by text whose every non-blank line is one, else `None`:
+/// prose stops at its first line instead of looking up every line.
+fn only_copied_paths(text: &str) -> Option<Vec<PathBuf>> {
     text.lines()
-        .map(|line| PathBuf::from(line.trim().trim_matches('"')))
-        .filter(|path| path.is_file())
-        .collect()
+        .filter(|line| !line.trim().is_empty())
+        .map(copied_path)
+        .collect::<Option<Vec<_>>>()
+        .filter(|paths| !paths.is_empty())
+}
+
+fn copied_path(line: &str) -> Option<PathBuf> {
+    let path = PathBuf::from(line.trim().trim_matches('"'));
+    path.is_file().then_some(path)
+}
+
+/// Whether the composer still holds what was pasted, however its line breaks
+/// or surrounding spaces came out.
+pub fn holds_pasted(composer: &str, pasted: &str) -> bool {
+    composer.split_whitespace().eq(pasted.split_whitespace())
 }
 
 /// Files copied to the clipboard by a file manager.
@@ -16986,8 +17024,40 @@ mod tests {
             zip.display(),
             directory.path().display(),
         );
-        assert_eq!(copied_paths(&text), [pdf, zip], "folders and text are skipped");
+        assert_eq!(
+            copied_paths(&text),
+            [pdf, zip],
+            "folders and text are skipped"
+        );
         assert!(copied_paths("").is_empty());
+    }
+
+    #[test]
+    fn a_path_pasted_into_an_empty_composer_offers_its_file() {
+        let directory = tempfile::tempdir().unwrap();
+        let pdf = directory.path().join("a b.pdf");
+        std::fs::write(&pdf, b"%PDF-fixture").unwrap();
+        let quoted = format!("\"{}\"", pdf.display());
+        for (composer, pasted, offered) in [
+            ("", quoted.clone(), true),
+            ("caption", quoted.clone(), false),
+            ("", format!("{quoted}\r\nnot a path"), false),
+            ("", "not a path".to_owned(), false),
+        ] {
+            let (mut app, ctx) = clipboard_app();
+            app.composer = composer.into();
+            let events = vec![egui::Event::Paste(pasted.clone()), paste_release()];
+            clipboard_frame(&mut app, &ctx, events, false);
+            let offer = app.path_suggestion.as_ref();
+            assert_eq!(offer.is_some(), offered, "{pasted:?} after {composer:?}");
+            if offered {
+                assert_eq!(offer.unwrap().1, std::slice::from_ref(&pdf));
+                assert!(app.pending.is_empty(), "nothing is attached unasked");
+                assert!(holds_pasted(&app.composer, &pasted), "the text is pasted");
+            }
+        }
+        assert!(holds_pasted(" a\r\nb ", "a b"));
+        assert!(!holds_pasted("a b c", "a b"));
     }
 
     #[test]

@@ -260,12 +260,18 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   files". It reads the clipboard's text, one path per line with or without
   quotes (Windows Explorer's "Copy as path"), and stages every line that names
   an existing file, as the file picker would. Nothing usable shows a toast.
+  Ctrl+V of such text into an empty message box still pastes it, and a strip
+  above the box offers "Attach file.pdf?" (or "Attach N files?") while the
+  box holds that text: Attach clears the text and stages the files, × keeps
+  the text. Only a paste whose every non-blank line names a file offers it.
 - **Why:** attach a file whose path I already copied without browsing to it.
 - **Files:** `src/model.rs` (`Action::AttachCopiedPaths`),
-  `src/ui/conversation.rs` (`composer_tools_menu`), `src/app.rs` (the action,
-  `copied_paths` and its test), `docs/_guide/using-zapfast.md`.
-- **Cost:** English-only label. Folders are skipped. Ctrl+V of a copied path
-  still pastes it as text, as upstream does.
+  `src/ui/conversation.rs` (`composer_tools_menu`, `path_suggestion_strip`),
+  `src/app.rs` (the action, `path_suggestion`, `take_clipboard_paste`,
+  `copied_paths`, `only_copied_paths`, `holds_pasted` and their tests),
+  `src/demo.rs` (`paste-path`), `docs/_guide/using-zapfast.md`.
+- **Cost:** English-only labels. Folders are skipped. A paste into a box that
+  already has text offers nothing (use the menu).
 
 ### F11 full screen
 

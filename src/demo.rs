@@ -3626,6 +3626,15 @@ pub fn apply_flags(app: &mut App, page: Option<&str>) {
                     seconds_left: Some(18),
                 });
             }
+            // A copied path pasted into the empty composer, offered as a file.
+            "paste-path" => {
+                let (photo, _) = sample_files(app);
+                app.open_chat = Some(SAMPLES[0].id.to_owned());
+                let pasted = format!("\"{}\"", photo.display());
+                app.composer = pasted.clone();
+                app.path_suggestion = Some((pasted, vec![photo]));
+                app.focus_composer = true;
+            }
             // Show two simultaneous group typers.
             "typers" => {
                 let group = SAMPLES[1].id;
@@ -9835,6 +9844,7 @@ mod tests {
             "edit",
             "unsent-voice",
             "transfers",
+            "paste-path",
             "scrolled",
             "reactions",
             "typers",

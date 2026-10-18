@@ -706,7 +706,10 @@ fn country_code_len(digits: &str) -> usize {
 /// prefix, which no country code starts with.
 pub fn typed_number(text: &str) -> Option<String> {
     let text = text.trim();
-    if !text.chars().all(|c| c.is_ascii_digit() || " +-().".contains(c)) {
+    if !text
+        .chars()
+        .all(|c| c.is_ascii_digit() || " +-().".contains(c))
+    {
         return None;
     }
     let digits: String = text.chars().filter(char::is_ascii_digit).collect();
@@ -1260,7 +1263,10 @@ mod tests {
     fn pasted_numbers_read_as_digits() {
         let number = |text| super::typed_number(text);
         assert_eq!(number("+1 (555) 123-4567").as_deref(), Some("15551234567"));
-        assert_eq!(number(" 0044 20 7946 0000 ").as_deref(), Some("442079460000"));
+        assert_eq!(
+            number(" 0044 20 7946 0000 ").as_deref(),
+            Some("442079460000")
+        );
         assert_eq!(number("923001234567").as_deref(), Some("923001234567"));
         assert_eq!(number("Bob 2"), None);
         assert_eq!(number("+ -"), None);

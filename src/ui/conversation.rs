@@ -1687,6 +1687,7 @@ fn composer(app: &mut App, ui: &mut egui::Ui, chat: &Chat, review_send: Option<b
                 });
                 return;
             }
+            path_suggestion_strip(app, ui);
             emoji_suggestions(app, ui, id);
             mention_picker(app, ui, chat, id);
             // `consume_key(NONE, Enter)` also matches Shift+Enter. Check the
@@ -2491,6 +2492,61 @@ fn upload_strips(app: &mut App, ui: &mut egui::Ui, chat: &str) {
     if let Some(id) = cancelled {
         app.actions.push(Action::CancelUpload(id));
     }
+}
+
+/// Offers to attach the files that a paste into the empty composer named
+/// (Explorer's "Copy as path"), for as long as the composer holds that text.
+fn path_suggestion_strip(app: &mut App, ui: &mut egui::Ui) {
+    let Some((pasted, paths)) = app.path_suggestion.clone() else {
+        return;
+    };
+    if app.editing.is_some() || !crate::app::holds_pasted(&app.composer, &pasted) {
+        app.path_suggestion = None;
+        return;
+    }
+    let palette = app.palette;
+    let label = match paths.as_slice() {
+        [path] => format!(
+            "Attach {}?",
+            path.file_name()
+                .unwrap_or(path.as_os_str())
+                .to_string_lossy()
+        ),
+        _ => format!("Attach {} files?", paths.len()),
+    };
+    widgets::raised(ui, &palette, strip_frame(&palette), |ui| {
+        ui.set_width(ui.available_width());
+        ui.horizontal(|ui| {
+            theme::icon(ui, Icon::FileText, 16.0, palette.accent);
+            let buttons = theme::soft_button_width(ui, "Attach", true) + 40.0;
+            ui.scope(|ui| {
+                ui.set_max_width((ui.available_width() - buttons).max(0.0));
+                widgets::rich_text(ui, &label, theme::semibold(12.5), palette.accent);
+            });
+            ui.with_layout(Layout::right_to_left(Align::Center), |ui| {
+                if theme::icon_button(
+                    ui,
+                    Icon::X,
+                    16.0,
+                    palette.secondary,
+                    palette.text,
+                    "Keep as text",
+                )
+                .clicked()
+                {
+                    app.path_suggestion = None;
+                }
+                if theme::soft_button(ui, &palette, Some(Icon::Paperclip), "Attach", true).clicked()
+                {
+                    // The text only named the files; it is no caption.
+                    app.composer.clear();
+                    app.path_suggestion = None;
+                    app.actions.push(Action::SendFiles(paths));
+                }
+            });
+        });
+    });
+    strip_gap(ui);
 }
 
 fn edit_strip(app: &mut App, ui: &mut egui::Ui) {
