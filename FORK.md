@@ -12,7 +12,7 @@ says what each one is for.
 change that makes the fork differ from upstream, and when a sync drops or
 reworks one.
 
-Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
+Synced to: upstream `v0.20.1` (2026-10-25).
 
 ## Changes
 
@@ -42,7 +42,10 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   comment that stated the old 40pt height, and
   `a_copy_across_messages_survives_rows_skipped_above`, which now lets the
   rows settle under a pointer before measuring: a pointer arriving shifts
-  them, and with the taller input its press missed the text it aimed at).
+  them, and with the taller input its press missed the text it aimed at;
+  upstream's `preview_navigation_overlays_the_photo_on_hover`, which finds
+  the viewer's arrows as 40pt circles, leaves out the send button, now
+  about that size, by finding it once with the arrows hidden).
 - **Cost:** the message list is about 7pt shorter.
 
 ### Own icon from a gitignored `branding/` folder
@@ -140,31 +143,38 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
 ### Agents ask the user to run and look
 
 - **What:** a section at the end of `AGENTS.md`, "What the agent runs (this
-  fork)": agents ask the user to do anything that means running the app and
-  watching it (including `--demo-shot`), and run only checks that give their
-  result as text (type checking, lints, `cargo test`).
-- **Why:** the user checks how things look and feel; agents check the code.
+  fork)": agents write the code and its tests and run only `cargo check`
+  (with `--all-features` when feature-gated code changed). The user runs
+  fmt, clippy, tests and doc, and anything that means running the app and
+  watching it (including `--demo-shot`); agents hand over those steps.
+- **Why:** the user checks how things look and feel, and runs the slow
+  checks; agents check that the code compiles.
 - **Files:** `AGENTS.md` (appended section only).
 - **Cost:** none. Kept at the end of the file because upstream edits
-  `AGENTS.md` often, so a sync should only conflict if upstream appends too.
+  `AGENTS.md` often, so a sync should only conflict if upstream appends too
+  (0.20 appended an account-wide "Pull requests" section; ours follows it).
 
 ### Named WhatZap, crediting ZapFast
 
 - **What:** the window title, tray, notifications (and the Windows toast
   name), link screen, About, macOS menus, dialogs, messages and shortcut list
-  say WhatZap, as do the exe's product name, the pack name on stickers made
-  here, and the name the phone lists under Linked devices (WhatsApp reads it
-  only when linking, so it shows after the next link). With chats loaded, the
+  say WhatZap, as do calls' messages, the volume mixer's name for our sounds,
+  the exe's product name, the pack name on stickers made here, and the name
+  the phone lists under Linked devices, `WhatZap (hostname)` with upstream's
+  hostname suffix (WhatsApp reads it only when linking, so it shows after
+  the next link). With chats loaded, the
   pane without an open chat says "A modified fork of ZapFast" instead of
   "Select a chat on the left.", "ZapFast" linking to the original repository
   (`CARGO_PKG_REPOSITORY`).
 - **Why:** this fork's own name, with credit to the project it comes from.
 - **Files:** user-visible strings in `src/main.rs`, `src/app.rs`,
-  `src/notify.rs`, `src/notify/windows.rs` (`DisplayName` only),
+  `src/notify.rs` (including the name fastframe-notifications registers as
+  the Windows toast's `DisplayName`), `src/app/calls.rs`, `src/calls.rs`,
+  `src/camera.rs`, `src/backend/worker/calls.rs`,
   `Cargo.toml` (`[[bin]]` is `WhatZap`, so the file is `WhatZap.exe`; the
   package and library stay `zapfast`), `src/main.rs` (`allow(non_snake_case)`
   for that crate name), `tests/update_flags.rs` (`CARGO_BIN_EXE_WhatZap`),
-  `src/macos.rs`, `src/autostart.rs` (Linux `Name=`/`Comment=`),
+  `src/macos.rs`,
   `src/data_folder.rs`, `src/paths.rs`, `src/archive/encryption.rs` (messages,
   with their copies in `src/ui/login.rs`'s test), `src/backend/worker.rs`,
   `src/backend/sticker_maker.rs`, `src/backend/sticker_store.rs`,
@@ -174,14 +184,20 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
 - **Kept as upstream on purpose:** every identifier, so the link, archive key
   and data stay put: crate and exe `zapfast`, `run_native("ZapFast")`,
   `app_id`, data folders, keyring service `rocks.zapfast.ZapFast`, AUMID,
-  autostart entry names, `ZAPFAST_*` variables, the update slug, the OGG
-  vendor tag. Update toasts, the update dialog and its settings say ZapFast
-  because they name upstream's release. `docs/`, `packaging/` and
+  autostart entry names (`Autostart::new("zapfast", "ZapFast")` in
+  `src/autostart.rs`: fastframe-autostart uses the name as the Windows Run
+  value too, so since 0.20 the Linux entry's `Name=` says ZapFast again),
+  `ZAPFAST_*` variables, the update slug, the OGG vendor tag. Update toasts,
+  the update dialog and its settings say ZapFast because they name
+  upstream's release; the macOS Login Items and camera-permission messages
+  do because they name the bundle. `docs/`, `packaging/` and
   `assets/i18n/` are untouched. After an upstream sync, rename any new
   user-visible "ZapFast" string the same way.
 - **Cost:** translated strings that named ZapFast (lock screen, the labels
   limit, read-only notes, locked-chat dialogs) are new msgids, so other
-  languages show them in English. Installers, the macOS bundle, Linux
+  languages show them in English. The group-call messages (0.20) instead
+  translate upstream's text and then swap the name, so they stay translated
+  (upstream's test checks the German one). Installers, the macOS bundle, Linux
   packages and the docs site still say ZapFast. The release workflow and
   `packaging/windows/zapfast.iss` still expect `zapfast.exe`. A Windows
   start-at-login entry made by `zapfast.exe` points at that file until it is
@@ -212,8 +228,9 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
 - **Files:** `src/ytdlp.rs` (new: types, finding and installing the tools,
   search, download, tests), `src/backend/worker/ytdlp.rs` (new: the worker
   side), `src/ui/picker/ytdlp.rs` (new: the tab and its tests),
-  `assets/icons/{youtube,instagram,facebook,link}.svg` (Lucide) and
-  `{x-logo,tiktok}.svg` (drawn here), `src/theme.rs` (icon table),
+  `assets/icons/{youtube,instagram,facebook}.svg` (Lucide) and
+  `{x-logo,tiktok}.svg` (drawn here; the link icon is upstream's since 0.20),
+  `src/theme.rs` (icon table),
   `src/ui/picker.rs` (tab entry and match arm), `src/model.rs`
   (`PickerTab::YtDlp`, four actions), `src/backend.rs` (commands and
   events), `src/backend/worker.rs` (dispatch, read-only check), `src/app.rs`
@@ -251,15 +268,22 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   `DOT_RADIUS` sets its size.
 - **Why:** the hand-drawn 16px digits looked blocky, more so once Windows
   scales the overlay for the display.
-- **Files:** `src/notify/badge_windows.rs` (`overlay_rgba` and its test; the
-  glyphs, capsule and label are gone), `docs/_guide/using-zapfast.md`.
+- **Files:** since 0.20 upstream draws the overlay in fastframe-dock, so
+  `src/notify/badge_windows.rs` is a copy of fastframe-dock v0.14.1's Windows
+  `Taskbar` (same API, its retry schedule and recreated-button hook) with the
+  dot's `overlay_rgba`, and its tests. `src/notify.rs` exports it in place of
+  `fastframe_dock::Taskbar`; `Cargo.toml` adds the `Win32_Graphics_Gdi` and
+  `Win32_UI_Shell` features to `windows`. `docs/_guide/using-zapfast.md`.
 - **Cost:** the button no longer shows how many; the overlay's accessible
-  text still says "N unread messages".
+  text still says "N unread messages". Fixes upstream makes to
+  fastframe-dock's Windows overlay must be copied by hand (compare
+  `crates/fastframe-dock/src/windows.rs` at each sync), and a change to its
+  `Taskbar` API breaks the build until this copy follows.
 
 ### Paste file path in the plus menu
 
 - **What:** the composer's **+** menu has "Paste file path" under "Send
-  files". It reads the clipboard's text, one path per line with or without
+  files" and "Send as document". It reads the clipboard's text, one path per line with or without
   quotes (Windows Explorer's "Copy as path"), and stages every line that names
   an existing file, as the file picker would. Nothing usable shows a toast.
   Ctrl+V of such text into an empty message box still pastes it, and a strip
@@ -269,9 +293,12 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
 - **Why:** attach a file whose path I already copied without browsing to it.
 - **Files:** `src/model.rs` (`Action::AttachCopiedPaths`),
   `src/ui/conversation.rs` (`composer_tools_menu`, `path_suggestion_strip`),
-  `src/app.rs` (the action, `path_suggestion`, `take_clipboard_paste`,
-  `copied_paths`, `only_copied_paths`, `holds_pasted` and their tests),
-  `src/demo.rs` (`paste-path`), `docs/_guide/using-zapfast.md`.
+  `src/app.rs` (the action, `path_suggestion`, the `else if` branch at the
+  end of upstream's `take_clipboard_paste`, `copied_paths`,
+  `only_copied_paths`, `holds_pasted` and their tests),
+  `src/demo.rs` (`paste-path`, and upstream's
+  `the_plus_menu_sends_files_or_creates_a_poll_and_closes`, which clicks
+  rows by position and now knows the fifth), `docs/_guide/using-zapfast.md`.
 - **Cost:** English-only labels. Folders are skipped. A paste into a box that
   already has text offers nothing (use the menu).
 
@@ -282,7 +309,9 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   edge slides down a 32pt strip with "WhatZap", Minimize, Exit full screen
   and Close; it slides away once the pointer moves below it. Close goes
   through `Action::CloseWindow`, so it keeps WhatZap in the tray as the
-  native button does. macOS keeps its own reveal.
+  native button does. macOS keeps its own reveal. While a call fills the
+  screen (0.20's call full screen), F11 and Exit full screen go through the
+  call's own toggle (`Action::ToggleCallFullscreen`), so its button agrees.
 - **Why:** a distraction-free window, like Edge's F11.
 - **Files:** `src/ui/mod.rs` (`full_screen`, `strip_shown`, their tests),
   `src/ui/keys.rs` (`SHORTCUTS` row), `docs/_guide/using-zapfast.md`.
@@ -304,7 +333,8 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   is one commit (84edf73) on branch `menu-above-taskbar` of
   [1adnansaad/tray-icon](https://github.com/1adnansaad/tray-icon), made from
   upstream's tag `tray-icon-v0.25.1` (local clone: `D:\dev\tray-icon`).
-- **Cost:** goes against AGENTS.md's "do not patch upstream crates" rule, by
+- **Cost:** goes against AGENTS.md's "do not patch upstream crates" rule,
+  and its rule that patches point only at the maintainer's repositories, by
   choice. Keep that branch on GitHub: builds fetch the pinned rev. A fastframe
   or tray-icon bump past 0.25 makes the patch stop applying (Cargo warns
   "patch was not used"): rebase the commit onto the new tag or drop it once
@@ -323,9 +353,13 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
   contact first.
 - **Files:** `src/util.rs` (`typed_number` and its test), `src/ui/chats.rs`
   (`number_row`, `message_number`; `person_row` takes `fetch_picture`),
-  `src/ui/dialogs.rs` (`new_chat`), `docs/_guide/using-zapfast.md`.
+  `src/ui/dialogs.rs` (`new_chat` hands the digits to upstream's
+  `contact_choices`, which New call and New group share, unchanged),
+  `docs/_guide/using-zapfast.md`.
 - **Cost:** English-only label. A local number without its country code
-  (`0300...`) is not converted and fails the check. No profile picture on the
+  (`0300...`) is not converted and fails the check. Upstream's
+  `util::international_phone` (0.20, for New contact) rejects the `00`
+  prefix, so `typed_number` stays separate. No profile picture on the
   row, so typing never asks for a stranger's.
 
 ## Dropped (upstream does it now)
