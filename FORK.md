@@ -70,8 +70,10 @@ Synced to: upstream `v0.19.0-10-g63ed17c` (2026-10-06).
 - **What:** the update dialog's one button is always "Copy merge prompt". It
   copies `assets/fork-merge-prompt.md` with this checkout's path, the running
   version and the release's version and URL filled in, asking an assistant to
-  rebase this fork onto the release tag while keeping what this file lists.
-  Upstream's Download and "Restart to update" buttons never appear.
+  rebase this fork onto the release tag while keeping what this file lists,
+  type checking only and leaving the other checks to me (as AGENTS.md's fork
+  section says). Upstream's Download and "Restart to update" buttons never
+  appear.
 - **Why:** installing upstream's release would replace this build and drop
   every change here.
 - **Files:** `src/updates.rs` (`merge_prompt` and its test),

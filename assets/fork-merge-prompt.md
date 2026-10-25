@@ -11,8 +11,11 @@ I keep a personal fork of ZapFast at {checkout} (remote `origin` is my fork,
    does what FORK.md says it is for. If upstream now does what one of my
    changes did, drop mine and move it to FORK.md's Dropped list. If both
    cannot hold, stop and ask me.
-5. Run the checks in AGENTS.md's Definition of done, from PowerShell rather
-   than Git Bash (MSYS perl cannot build the bundled OpenSSL).
+5. Type check only, as AGENTS.md's fork section says: run
+   `cargo check --all-targets` and `cargo check --all-targets --all-features`
+   from PowerShell rather than Git Bash (MSYS perl cannot build the bundled
+   OpenSSL). Run none of the other Definition of done checks (fmt, clippy,
+   tests, doc); list them for me to run.
 6. Update FORK.md: the "Synced to" line, and any entry that changed.
 7. Show me `git log --oneline v{new}..main` and summarize what changed and
    what you decided. Do not push; I will run
