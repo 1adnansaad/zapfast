@@ -12,7 +12,7 @@ says what each one is for.
 change that makes the fork differ from upstream, and when a sync drops or
 reworks one.
 
-Synced to: upstream `v0.20.1` (2026-10-25).
+Synced to: upstream `v0.21.1` (2026-11-09).
 
 ## Changes
 
@@ -130,11 +130,13 @@ Synced to: upstream `v0.20.1` (2026-10-25).
 
 - **What:** each linked account in the menu under our own picture (beside
   "Chats") has a paper plane between its name and number and the check or
-  unread count. It opens that account's chat with ourselves, switching to the
-  account first when it is not the one on screen (`Action::MessageYourself`,
-  the same as the New chat dialog's "Message yourself" row).
+  unread count, left of the bell 0.21 added to mute an account. It opens that
+  account's chat with ourselves, switching to the account first when it is not
+  the one on screen (`Action::MessageYourself`, the same as the New chat
+  dialog's "Message yourself" row).
 - **Why:** one click to the self chat.
-- **Files:** `src/ui/accounts.rs` (`account_row` and `menu`), `src/demo.rs`
+- **Files:** `src/ui/accounts.rs` (`account_row` and `menu`, and
+  `RowClick::Yourself` beside upstream's `Row` and `Bell`), `src/demo.rs`
   (`the_switchers_paper_plane_messages_yourself`),
   `docs/_guide/getting-started.md`.
 - **Cost:** the name and number column is 32pt narrower and ellipsizes
@@ -170,7 +172,8 @@ Synced to: upstream `v0.20.1` (2026-10-25).
 - **Files:** user-visible strings in `src/main.rs`, `src/app.rs`,
   `src/notify.rs` (including the name fastframe-notifications registers as
   the Windows toast's `DisplayName`), `src/app/calls.rs`, `src/calls.rs`,
-  `src/camera.rs`, `src/backend/worker/calls.rs`,
+  `src/camera.rs`, `src/backend/worker/calls.rs`, `src/archive/chat_export.rs`
+  (the export's first line) and `src/backend/worker/chat_export.rs` (0.21),
   `Cargo.toml` (`[[bin]]` is `WhatZap`, so the file is `WhatZap.exe`; the
   package and library stay `zapfast`), `src/main.rs` (`allow(non_snake_case)`
   for that crate name), `tests/update_flags.rs` (`CARGO_BIN_EXE_WhatZap`),
@@ -188,16 +191,19 @@ Synced to: upstream `v0.20.1` (2026-10-25).
   `src/autostart.rs`: fastframe-autostart uses the name as the Windows Run
   value too, so since 0.20 the Linux entry's `Name=` says ZapFast again),
   `ZAPFAST_*` variables, the update slug, the OGG vendor tag. Update toasts,
-  the update dialog and its settings say ZapFast because they name
-  upstream's release; the macOS Login Items and camera-permission messages
-  do because they name the bundle. `docs/`, `packaging/` and
-  `assets/i18n/` are untouched. After an upstream sync, rename any new
-  user-visible "ZapFast" string the same way.
+  the update dialog and its settings say ZapFast because they name upstream's
+  release; the macOS Login Items and camera-permission messages do because
+  they name the bundle. The link preview fetcher's User-Agent
+  (`ZapFast/<version>`, what sites see) and the log line about an older
+  ZapFast's files beside an account (`src/paths.rs`) stay as upstream too.
+  `docs/`, `packaging/` and `assets/i18n/` are untouched. After an upstream
+  sync, rename any new user-visible "ZapFast" string the same way.
 - **Cost:** translated strings that named ZapFast (lock screen, the labels
   limit, read-only notes, locked-chat dialogs) are new msgids, so other
-  languages show them in English. The group-call messages (0.20) instead
-  translate upstream's text and then swap the name, so they stay translated
-  (upstream's test checks the German one). Installers, the macOS bundle, Linux
+  languages show them in English. The group-call messages (0.20) and the
+  "could not save the change" archive toast (0.21) instead translate
+  upstream's text and then swap the name, so they stay translated (upstream's
+  test checks the German group-call one). Installers, the macOS bundle, Linux
   packages and the docs site still say ZapFast. The release workflow and
   `packaging/windows/zapfast.iss` still expect `zapfast.exe`. A Windows
   start-at-login entry made by `zapfast.exe` points at that file until it is
@@ -213,9 +219,10 @@ Synced to: upstream `v0.20.1` (2026-10-25).
   Send fetches the video (H.264/AAC MP4, at most 720p, under the 64 MB
   attachment limit) and sends it to the open chat with the reply that was
   open, through `send_files`. Download fetches it into the download folder
-  (the Settings one, else the system's Downloads); a saved card's button
-  then shows its folder, and Send uses the saved file. The picker stays open
-  and the card shows the download's progress, read from yt-dlp's
+  (the Settings one itself, not 0.21's account and chat folders inside it,
+  since it came from no chat; else the system's Downloads); a saved card's
+  button then shows its folder, and Send uses the saved file. The picker stays
+  open and the card shows the download's progress, read from yt-dlp's
   `--progress-template` lines; a failure replaces the card's title.
   The yt-dlp program is run directly, no Rust crate: from `PATH` first, else
   a copy downloaded from yt-dlp's GitHub release when the tab's button is
@@ -235,7 +242,7 @@ Synced to: upstream `v0.20.1` (2026-10-25).
   (`PickerTab::YtDlp`, four actions), `src/backend.rs` (commands and
   events), `src/backend/worker.rs` (dispatch, read-only check), `src/app.rs`
   (`ytdlp` state, actions, events, test), `src/paths.rs`
-  (`AccountDirs::tools_dir`), `src/proxy.rs` (`Proxy::url`), `src/lib.rs`,
+  (`AccountDirs::tools_dir`), `src/lib.rs`,
   `src/demo.rs` (`ytdlp`, `ytdlp-missing`),
   `docs/_reference/settings-and-files.md`, `docs/_reference/how-it-links.md`.
 - **Cost:** only YouTube can be searched (yt-dlp searches no other of these
@@ -270,10 +277,11 @@ Synced to: upstream `v0.20.1` (2026-10-25).
   scales the overlay for the display.
 - **Files:** since 0.20 upstream draws the overlay in fastframe-dock, so
   `src/notify/badge_windows.rs` is a copy of fastframe-dock v0.14.1's Windows
-  `Taskbar` (same API, its retry schedule and recreated-button hook) with the
-  dot's `overlay_rgba`, and its tests. `src/notify.rs` exports it in place of
-  `fastframe_dock::Taskbar`; `Cargo.toml` adds the `Win32_Graphics_Gdi` and
-  `Win32_UI_Shell` features to `windows`. `docs/_guide/using-zapfast.md`.
+  `Taskbar` (still identical in v0.15.4, which 0.21.1 uses) (same API, its
+  retry schedule and recreated-button hook) with the dot's `overlay_rgba`, and
+  its tests. `src/notify.rs` exports it in place of `fastframe_dock::Taskbar`;
+  `Cargo.toml` adds the `Win32_Graphics_Gdi` and `Win32_UI_Shell` features to
+  `windows`. `docs/_guide/using-zapfast.md`.
 - **Cost:** the button no longer shows how many; the overlay's accessible
   text still says "N unread messages". Fixes upstream makes to
   fastframe-dock's Windows overlay must be copied by hand (compare
@@ -282,14 +290,15 @@ Synced to: upstream `v0.20.1` (2026-10-25).
 
 ### Paste file path in the plus menu
 
-- **What:** the composer's **+** menu has "Paste file path" under "Send
-  files" and "Send as document". It reads the clipboard's text, one path per line with or without
-  quotes (Windows Explorer's "Copy as path"), and stages every line that names
-  an existing file, as the file picker would. Nothing usable shows a toast.
-  Ctrl+V of such text into an empty message box still pastes it, and a strip
-  above the box offers "Attach file.pdf?" (or "Attach N files?") while the
-  box holds that text: Attach clears the text and stages the files, × keeps
-  the text. Only a paste whose every non-blank line names a file offers it.
+- **What:** the composer's **+** menu has "Paste file path" under "Send files"
+  and "Send as document". It reads the clipboard's text, one path per line
+  with or without quotes (Windows Explorer's "Copy as path"), and stages every
+  line that names an existing file, as the file picker would. Nothing usable
+  shows a toast. Ctrl+V of such text into an empty message box still pastes
+  it, and a strip above the box offers "Attach file.pdf?" (or "Attach N
+  files?") while the box holds that text: Attach clears the text and stages
+  the files, × keeps the text. Only a paste whose every non-blank line names a
+  file offers it.
 - **Why:** attach a file whose path I already copied without browsing to it.
 - **Files:** `src/model.rs` (`Action::AttachCopiedPaths`),
   `src/ui/conversation.rs` (`composer_tools_menu`, `path_suggestion_strip`),
