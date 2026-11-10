@@ -275,8 +275,10 @@ and nothing is staged while a menu, the picker, a recording, or a full-size
 video is open.
 **+** > **Paste file path** attaches the files whose full paths are on the
 clipboard as text, one per line, such as Windows Explorer's **Copy as path**.
-Pasting such paths into an empty message box pastes them as text and offers
-**Attach** above it; the **×** keeps them as text.
+When the message names a file by its full path, typed or pasted, quoted or
+among other words, a strip above it offers **Attach**: the file is attached and
+its path taken out of the text, which stays as the caption. The **×** keeps the
+path as text. Network paths (`\\server\share`) are not looked up.
 Staged files open a review area below the chat header. The selected photo
 is shown large and fitted whole; other files show their name and size. Click
 a tile along the bottom to review another file, or **+** to add more. The

@@ -593,9 +593,6 @@ pub struct App {
     pub dropping: bool,
     /// Where the Ctrl/Cmd+V shortcut stands across frames.
     paste_keys: PasteKeys,
-    /// Text pasted into an empty composer that names only files, with those
-    /// files: the composer offers to attach them while it holds that text.
-    pub path_suggestion: Option<(String, Vec<PathBuf>)>,
     /// Open emoji, GIF, or sticker picker tab.
     pub picker: Option<PickerTab>,
     /// Picker anchor at the composer button.
@@ -1645,7 +1642,6 @@ impl App {
             sweep: None,
             dropping: false,
             paste_keys: PasteKeys::default(),
-            path_suggestion: None,
             picker: None,
             picker_anchor: None,
             picker_search: String::new(),
@@ -8520,7 +8516,7 @@ impl App {
                 let text = arboard::Clipboard::new()
                     .and_then(|mut clipboard| clipboard.get_text())
                     .unwrap_or_default();
-                let paths = copied_paths(&text);
+                let paths: Vec<_> = paths_in(&text).into_iter().map(|(_, path)| path).collect();
                 if paths.is_empty() {
                     self.toast_error("The clipboard holds no path to a file");
                 } else {
@@ -11938,12 +11934,6 @@ impl App {
         }
         ctx.data_mut(|data| data.insert_temp(frame_id, (frame, false)));
         let requested = ctx.input(|input| self.paste_keys.read(input));
-        let pasted = ctx.input(|input| {
-            input.events.iter().find_map(|event| match event {
-                egui::Event::Paste(text) => Some(text.clone()),
-                _ => None,
-            })
-        });
         // A message or button may retain keyboard focus after clicking it.
         // Other text fields still own their clipboard input.
         let editing_text = ctx.text_edit_focused();
@@ -11953,7 +11943,8 @@ impl App {
                     && !memory.has_focus(egui::Id::new("search"))
                     && !memory.has_focus(egui::Id::new("chat-search")))
         });
-        let writable = composing
+        if requested
+            && composing
             && self.chat_view()
             && self.dialog.is_none()
             && self.image_preview.is_none()
@@ -11966,9 +11957,7 @@ impl App {
                 .open_chat
                 .as_deref()
                 .and_then(|id| self.chat(id))
-                .is_some_and(Chat::can_send);
-        if requested
-            && writable
+                .is_some_and(Chat::can_send)
             && let Some(contents) = read_clipboard()
         {
             ctx.data_mut(|data| data.insert_temp(frame_id, (frame, true)));
@@ -11981,15 +11970,6 @@ impl App {
                     .retain(|event| !matches!(event, egui::Event::Paste(_)))
             });
             self.stage_clipboard(ctx, contents);
-        } else if writable
-            && self.composer.trim().is_empty()
-            && let Some(pasted) = pasted
-            && let Some(paths) = only_copied_paths(&pasted)
-        {
-            // Fork: Explorer's "Copy as path" is plain text, pasted as it is;
-            // an empty composer offers to attach what it names instead
-            // (FORK.md).
-            self.path_suggestion = Some((pasted, paths));
         }
     }
 
@@ -12416,31 +12396,98 @@ fn clipboard_text() -> Option<String> {
     arboard::Clipboard::new().ok()?.get_text().ok()
 }
 
-/// Existing files named in clipboard text, one per line, with or without the
-/// quotes Explorer's "Copy as path" puts around each.
-fn copied_paths(text: &str) -> Vec<PathBuf> {
-    text.lines().filter_map(copied_path).collect()
+/// Fork (FORK.md): existing files that `text` names, each with the part of
+/// the text naming it, in order: a quoted path (Explorer's "Copy as path"),
+/// or an absolute one among other words, taking the longest run of words on
+/// its line that names a file, so spaces in a name need no quotes. Folders
+/// are skipped, and so are network paths, whose lookup can hold the window.
+pub(crate) fn paths_in(text: &str) -> Vec<(std::ops::Range<usize>, PathBuf)> {
+    // ponytail: looks files up on the interface thread whenever the text
+    // changes; a mapped drive that has gone away can stall a keystroke. Ask
+    // the worker instead if that bites.
+    const LONGEST: usize = 12;
+    const TRAILING: [char; 7] = ['.', ',', ';', ':', '!', '?', ')'];
+    let file = |candidate: &str| {
+        let candidate = candidate.trim();
+        let network = candidate.starts_with(r"\\") || candidate.starts_with("//");
+        let path = PathBuf::from(candidate);
+        (!network && path.is_absolute() && path.is_file()).then_some(path)
+    };
+    let mut found = Vec::new();
+    let mut offset = 0;
+    for line in text.split_inclusive('\n') {
+        let words: Vec<(usize, usize)> = line
+            .split_whitespace()
+            .map(|word| {
+                let start = word.as_ptr() as usize - line.as_ptr() as usize;
+                (start, start + word.len())
+            })
+            .collect();
+        let mut i = 0;
+        while i < words.len() {
+            let start = words[i].0;
+            let named = if line[start..].starts_with('"') {
+                // Up to the quote's close, in this word or a later one.
+                let closing = |j: usize| line[words[j].0..words[j].1].trim_end_matches(TRAILING);
+                (i..words.len())
+                    .find(|&j| closing(j).ends_with('"') && (j > i || closing(j).len() > 1))
+                    .and_then(|j| {
+                        let end = words[j].0 + closing(j).len();
+                        file(&line[start + 1..end - 1]).map(|path| (j, end, path))
+                    })
+            } else if std::path::Path::new(&line[start..words[i].1]).is_absolute() {
+                (i..words.len().min(i + LONGEST)).rev().find_map(|j| {
+                    let span = &line[start..words[j].1];
+                    [span, span.trim_end_matches(TRAILING)]
+                        .into_iter()
+                        .find_map(|candidate| Some((j, start + candidate.len(), file(candidate)?)))
+                })
+            } else {
+                None
+            };
+            match named {
+                Some((j, end, path)) => {
+                    found.push((offset + start..offset + end, path));
+                    i = j + 1;
+                }
+                None => i += 1,
+            }
+        }
+        offset += line.len();
+    }
+    found
 }
 
-/// The files named by text whose every non-blank line is one, else `None`:
-/// prose stops at its first line instead of looking up every line.
-fn only_copied_paths(text: &str) -> Option<Vec<PathBuf>> {
-    text.lines()
-        .filter(|line| !line.trim().is_empty())
-        .map(copied_path)
-        .collect::<Option<Vec<_>>>()
-        .filter(|paths| !paths.is_empty())
-}
-
-fn copied_path(line: &str) -> Option<PathBuf> {
-    let path = PathBuf::from(line.trim().trim_matches('"'));
-    path.is_file().then_some(path)
-}
-
-/// Whether the composer still holds what was pasted, however its line breaks
-/// or surrounding spaces came out.
-pub fn holds_pasted(composer: &str, pasted: &str) -> bool {
-    composer.split_whitespace().eq(pasted.split_whitespace())
+/// Fork (FORK.md): `text` without the parts at `ranges` (from [`paths_in`]),
+/// what is left of each line they were on closed up, and a line left with
+/// nothing to say dropped: the rest is the caption.
+pub(crate) fn without_paths(text: &str, ranges: &[std::ops::Range<usize>]) -> String {
+    let mut lines = Vec::new();
+    let mut start = 0;
+    for line in text.split_inclusive('\n') {
+        let end = start + line.len();
+        let cuts: Vec<_> = ranges
+            .iter()
+            .filter(|range| range.start >= start && range.end <= end)
+            .collect();
+        if cuts.is_empty() {
+            lines.push(line.trim_end_matches(['\r', '\n']).to_owned());
+        } else {
+            let mut kept = String::new();
+            let mut at = start;
+            for cut in cuts {
+                kept.push_str(&text[at..cut.start]);
+                at = cut.end;
+            }
+            kept.push_str(&text[at..end]);
+            let kept = kept.split_whitespace().collect::<Vec<_>>().join(" ");
+            if kept.chars().any(char::is_alphanumeric) {
+                lines.push(kept);
+            }
+        }
+        start = end;
+    }
+    lines.join("\n").trim().to_owned()
 }
 
 /// Files copied to the clipboard by a file manager.
@@ -17017,52 +17064,45 @@ mod tests {
     }
 
     #[test]
-    fn copied_paths_read_explorers_quoted_lines() {
+    fn paths_in_finds_files_quoted_or_among_words() {
         let directory = tempfile::tempdir().unwrap();
         let pdf = directory.path().join("a b.pdf");
         let zip = directory.path().join("c.zip");
         std::fs::write(&pdf, b"%PDF-fixture").unwrap();
         std::fs::write(&zip, b"PK-fixture").unwrap();
-        let text = format!(
+        let named = |text: &str| -> Vec<PathBuf> {
+            paths_in(text).into_iter().map(|(_, path)| path).collect()
+        };
+        // Explorer's "Copy as path", a plain line, a folder, and words.
+        let copied = format!(
             "\"{}\"\r\n{}\r\n\"{}\"\r\nnot a path",
             pdf.display(),
             zip.display(),
             directory.path().display(),
         );
-        assert_eq!(
-            copied_paths(&text),
-            [pdf, zip],
-            "folders and text are skipped"
-        );
-        assert!(copied_paths("").is_empty());
+        assert_eq!(named(&copied), [pdf.clone(), zip.clone()], "folders are skipped");
+        // Among other words, with a space in the name and a full stop after.
+        let sentence = format!("here is {} and {}.", pdf.display(), zip.display());
+        let found = paths_in(&sentence);
+        assert_eq!(named(&sentence), [pdf.clone(), zip.clone()]);
+        assert_eq!(&sentence[found[0].0.clone()], pdf.display().to_string());
+        assert_eq!(&sentence[found[1].0.clone()], zip.display().to_string());
+        assert!(named("not a path, nor /nowhere/at/all.pdf").is_empty());
+        assert!(named(r"\\server\share\c.zip").is_empty(), "no network lookups");
+        assert!(named("").is_empty());
     }
 
     #[test]
-    fn a_path_pasted_into_an_empty_composer_offers_its_file() {
-        let directory = tempfile::tempdir().unwrap();
-        let pdf = directory.path().join("a b.pdf");
-        std::fs::write(&pdf, b"%PDF-fixture").unwrap();
-        let quoted = format!("\"{}\"", pdf.display());
-        for (composer, pasted, offered) in [
-            ("", quoted.clone(), true),
-            ("caption", quoted.clone(), false),
-            ("", format!("{quoted}\r\nnot a path"), false),
-            ("", "not a path".to_owned(), false),
-        ] {
-            let (mut app, ctx) = clipboard_app();
-            app.composer = composer.into();
-            let events = vec![egui::Event::Paste(pasted.clone()), paste_release()];
-            clipboard_frame(&mut app, &ctx, events, false);
-            let offer = app.path_suggestion.as_ref();
-            assert_eq!(offer.is_some(), offered, "{pasted:?} after {composer:?}");
-            if offered {
-                assert_eq!(offer.unwrap().1, std::slice::from_ref(&pdf));
-                assert!(app.pending.is_empty(), "nothing is attached unasked");
-                assert!(holds_pasted(&app.composer, &pasted), "the text is pasted");
-            }
-        }
-        assert!(holds_pasted(" a\r\nb ", "a b"));
-        assert!(!holds_pasted("a b c", "a b"));
+    fn without_paths_leaves_the_caption() {
+        let text = "\"C:\\a.pdf\"\nlook at this\nC:\\b.pdf";
+        assert_eq!(without_paths(text, &[0..10, 24..32]), "look at this");
+        assert_eq!(without_paths("here is X for you", &[8..9]), "here is for you");
+        assert_eq!(without_paths("X.", &[0..1]), "", "nothing left to say");
+        assert_eq!(
+            without_paths("  kept  as  typed\nX", &[18..19]),
+            "kept  as  typed",
+            "untouched lines keep their spaces"
+        );
     }
 
     #[test]

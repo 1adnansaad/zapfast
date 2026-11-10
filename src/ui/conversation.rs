@@ -2494,25 +2494,53 @@ fn upload_strips(app: &mut App, ui: &mut egui::Ui, chat: &str) {
     }
 }
 
-/// Offers to attach the files that a paste into the empty composer named
-/// (Explorer's "Copy as path"), for as long as the composer holds that text.
+/// What the composer's text was last scanned for files, and the files the
+/// reader chose to keep as text, for the chat it was typed in.
+#[derive(Clone, Default)]
+struct PathScan {
+    chat: Option<ChatId>,
+    text: String,
+    found: Vec<(std::ops::Range<usize>, PathBuf)>,
+    kept: Vec<PathBuf>,
+}
+
+/// Offers to attach the files the composer's text names by their full paths
+/// (Explorer's "Copy as path", or typed), as the link preview offers a link's
+/// card: Attach stages them and takes their paths out of the text, which
+/// stays as the caption; × keeps them as text. The text is scanned only when
+/// it changes.
 fn path_suggestion_strip(app: &mut App, ui: &mut egui::Ui) {
-    let Some((pasted, paths)) = app.path_suggestion.clone() else {
-        return;
-    };
-    if app.editing.is_some() || !crate::app::holds_pasted(&app.composer, &pasted) {
-        app.path_suggestion = None;
+    let id = egui::Id::new("composer-paths");
+    let mut scan: PathScan = ui.ctx().data(|data| data.get_temp(id)).unwrap_or_default();
+    if scan.chat != app.open_chat || app.composer.trim().is_empty() {
+        scan = PathScan {
+            chat: app.open_chat.clone(),
+            ..PathScan::default()
+        };
+    }
+    if scan.text != app.composer {
+        scan.found = crate::app::paths_in(&app.composer);
+        scan.text = app.composer.clone();
+    }
+    let offered: Vec<_> = scan
+        .found
+        .iter()
+        .filter(|(_, path)| !scan.kept.contains(path))
+        .cloned()
+        .collect();
+    if offered.is_empty() || app.editing.is_some() {
+        ui.ctx().data_mut(|data| data.insert_temp(id, scan));
         return;
     }
     let palette = app.palette;
-    let label = match paths.as_slice() {
-        [path] => format!(
+    let label = match offered.as_slice() {
+        [(_, path)] => format!(
             "Attach {}?",
             path.file_name()
                 .unwrap_or(path.as_os_str())
                 .to_string_lossy()
         ),
-        _ => format!("Attach {} files?", paths.len()),
+        _ => format!("Attach {} files?", offered.len()),
     };
     widgets::raised(ui, &palette, strip_frame(&palette), |ui| {
         ui.set_width(ui.available_width());
@@ -2534,18 +2562,21 @@ fn path_suggestion_strip(app: &mut App, ui: &mut egui::Ui) {
                 )
                 .clicked()
                 {
-                    app.path_suggestion = None;
+                    scan.kept.extend(offered.iter().map(|(_, path)| path.clone()));
                 }
                 if theme::soft_button(ui, &palette, Some(Icon::Paperclip), "Attach", true).clicked()
                 {
-                    // The text only named the files; it is no caption.
-                    app.composer.clear();
-                    app.path_suggestion = None;
-                    app.actions.push(Action::SendFiles(paths));
+                    // The paths only named the files; the rest is the caption.
+                    let ranges: Vec<_> = offered.iter().map(|(range, _)| range.clone()).collect();
+                    app.composer = crate::app::without_paths(&app.composer, &ranges);
+                    app.actions.push(Action::SendFiles(
+                        offered.iter().map(|(_, path)| path.clone()).collect(),
+                    ));
                 }
             });
         });
     });
+    ui.ctx().data_mut(|data| data.insert_temp(id, scan));
     strip_gap(ui);
 }
 
