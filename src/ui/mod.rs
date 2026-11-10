@@ -812,19 +812,22 @@ const FULL_SCREEN_STRIP: f32 = 32.0;
 /// filling the screen leaves it through the call's own toggle, so the call's
 /// button keeps agreeing with the window.
 fn full_screen(app: &mut App, ctx: &egui::Context) {
-    let on = ctx.input(|input| input.viewport().fullscreen.unwrap_or(false));
+    let native = ctx.input(|input| input.viewport().fullscreen.unwrap_or(false));
+    let on = native || borderless::active(ctx);
     let leave = |app: &mut App| {
         if app.call_fullscreen {
             app.actions.push(Action::ToggleCallFullscreen);
-        } else {
+        } else if native {
             ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(false));
+        } else {
+            borderless::leave(ctx);
         }
     };
     if ctx.input_mut(|input| keys::take_plain(input, egui::Key::F11)) {
         if on {
             leave(app);
         } else {
-            ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(true));
+            borderless::enter(ctx);
         }
     }
     let id = egui::Id::new("full-screen-strip");
@@ -888,6 +891,138 @@ fn full_screen(app: &mut App, ctx: &egui::Context) {
 /// it down, and it stays while the pointer is over it.
 fn strip_shown(was: bool, pointer: Option<egui::Pos2>) -> bool {
     pointer.is_some_and(|pos| pos.y < 2.0 || (was && pos.y < FULL_SCREEN_STRIP))
+}
+
+/// Whether F11 has the window filling the screen as a borderless window, the
+/// Windows full screen; the window's size is not remembered meanwhile.
+pub fn filling_screen(ctx: &egui::Context) -> bool {
+    borderless::active(ctx)
+}
+
+/// Windows: F11's full screen is a borderless window over the monitor, one
+/// pixel taller than it, instead of winit's full screen. A window exactly the
+/// monitor's size lets the graphics driver take the screen over for it, which
+/// blanks the whole screen for a moment on the way in and out.
+#[cfg(target_os = "windows")]
+mod borderless {
+    use egui::{Pos2, Rect, Vec2, ViewportCommand, pos2, vec2};
+
+    /// The window as it was, to go back to.
+    #[derive(Clone, Copy, Default)]
+    struct Restore {
+        position: Pos2,
+        size: Vec2,
+        maximized: bool,
+    }
+
+    fn id() -> egui::Id {
+        egui::Id::new("borderless-full-screen")
+    }
+
+    pub fn active(ctx: &egui::Context) -> bool {
+        ctx.data(|data| data.get_temp::<Restore>(id()).is_some())
+    }
+
+    pub fn enter(ctx: &egui::Context) {
+        let (outer, inner, maximized) = ctx.input(|input| {
+            let viewport = input.viewport();
+            (
+                viewport.outer_rect,
+                viewport.inner_rect,
+                viewport.maximized.unwrap_or(false),
+            )
+        });
+        let ppp = ctx.pixels_per_point();
+        let (Some(outer), Some(inner)) = (outer, inner) else {
+            return;
+        };
+        let Some(monitor) = monitor(outer.center() * ppp) else {
+            return;
+        };
+        let (position, size) = cover(monitor, ppp);
+        ctx.data_mut(|data| {
+            data.insert_temp(
+                id(),
+                Restore {
+                    position: outer.min,
+                    size: inner.size(),
+                    maximized,
+                },
+            )
+        });
+        if maximized {
+            ctx.send_viewport_cmd(ViewportCommand::Maximized(false));
+        }
+        ctx.send_viewport_cmd(ViewportCommand::Decorations(false));
+        ctx.send_viewport_cmd(ViewportCommand::OuterPosition(position));
+        ctx.send_viewport_cmd(ViewportCommand::InnerSize(size));
+    }
+
+    pub fn leave(ctx: &egui::Context) {
+        let Some(restore) = ctx.data_mut(|data| data.remove_temp::<Restore>(id())) else {
+            return;
+        };
+        ctx.send_viewport_cmd(ViewportCommand::Decorations(
+            !fastframe_titlebar::enabled(),
+        ));
+        ctx.send_viewport_cmd(ViewportCommand::OuterPosition(restore.position));
+        ctx.send_viewport_cmd(ViewportCommand::InnerSize(restore.size));
+        if restore.maximized {
+            ctx.send_viewport_cmd(ViewportCommand::Maximized(true));
+        }
+    }
+
+    /// Where the window goes and how big, in points, to cover `monitor` (in
+    /// physical pixels) with one pixel to spare below its bottom edge.
+    pub(super) fn cover(monitor: Rect, ppp: f32) -> (Pos2, Vec2) {
+        (
+            (monitor.min.to_vec2() / ppp).to_pos2(),
+            (monitor.size() + vec2(0.0, 1.0)) / ppp,
+        )
+    }
+
+    /// The monitor nearest `point`, in physical pixels.
+    fn monitor(point: Pos2) -> Option<Rect> {
+        use windows::Win32::Foundation::POINT;
+        use windows::Win32::Graphics::Gdi::{
+            GetMonitorInfoW, MONITOR_DEFAULTTONEAREST, MONITORINFO, MonitorFromPoint,
+        };
+        let mut info = MONITORINFO {
+            cbSize: size_of::<MONITORINFO>() as u32,
+            ..Default::default()
+        };
+        let point = POINT {
+            x: point.x as i32,
+            y: point.y as i32,
+        };
+        // SAFETY: plain values, and `info` carries the size the call expects.
+        let found = unsafe {
+            GetMonitorInfoW(MonitorFromPoint(point, MONITOR_DEFAULTTONEAREST), &mut info).as_bool()
+        };
+        let edge = info.rcMonitor;
+        found.then(|| {
+            Rect::from_min_max(
+                pos2(edge.left as f32, edge.top as f32),
+                pos2(edge.right as f32, edge.bottom as f32),
+            )
+        })
+    }
+}
+
+/// Elsewhere F11 asks winit for its borderless full screen.
+#[cfg(not(target_os = "windows"))]
+mod borderless {
+    pub fn active(_ctx: &egui::Context) -> bool {
+        false
+    }
+
+    pub fn enter(ctx: &egui::Context) {
+        ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(true));
+    }
+
+    pub fn leave(ctx: &egui::Context) {
+        ctx.send_viewport_cmd(egui::ViewportCommand::Fullscreen(false));
+    }
 }
 
 /// Draggable space across the top of the linking and lock screens, which
@@ -1876,43 +2011,14 @@ mod full_screen_tests {
         assert!(!strip_shown(true, None), "the pointer left the window");
     }
 
-    #[test]
-    fn f11_toggles_full_screen() {
-        let root = tempfile::tempdir().unwrap();
-        let mut app = App::headless(
-            crate::paths::AppDirs::under(root.path()),
-            crate::settings::Settings::default(),
-        )
-        .0;
-        let ctx = egui::Context::default();
-        for on in [false, true] {
-            let mut input = egui::RawInput {
-                events: vec![egui::Event::Key {
-                    key: egui::Key::F11,
-                    physical_key: None,
-                    pressed: true,
-                    repeat: false,
-                    modifiers: egui::Modifiers::NONE,
-                }],
-                ..Default::default()
-            };
-            input
-                .viewports
-                .get_mut(&egui::ViewportId::ROOT)
-                .unwrap()
-                .fullscreen = Some(on);
-            let mut output = ctx.run_ui(input, |ui| full_screen(&mut app, ui.ctx()));
-            output.textures_delta.clear();
-            let commands = &output.viewport_output[&egui::ViewportId::ROOT].commands;
-            assert!(
-                commands
-                    .iter()
-                    .any(|command| *command == egui::ViewportCommand::Fullscreen(!on)),
-                "{commands:?}"
-            );
-        }
-        // A call filling the screen leaves through its own toggle.
-        app.call_fullscreen = true;
+    /// One frame of `full_screen` with F11 pressed (or not), on a window
+    /// that is `fullscreen` by winit, at `rect`, returning its commands.
+    fn press_f11(
+        app: &mut App,
+        ctx: &egui::Context,
+        fullscreen: bool,
+        rect: egui::Rect,
+    ) -> Vec<egui::ViewportCommand> {
         let mut input = egui::RawInput {
             events: vec![egui::Event::Key {
                 key: egui::Key::F11,
@@ -1923,22 +2029,102 @@ mod full_screen_tests {
             }],
             ..Default::default()
         };
-        input
-            .viewports
-            .get_mut(&egui::ViewportId::ROOT)
-            .unwrap()
-            .fullscreen = Some(true);
-        let mut output = ctx.run_ui(input, |ui| full_screen(&mut app, ui.ctx()));
+        let viewport = input.viewports.get_mut(&egui::ViewportId::ROOT).unwrap();
+        viewport.fullscreen = Some(fullscreen);
+        viewport.inner_rect = Some(rect);
+        viewport.outer_rect = Some(rect.expand2(egui::vec2(8.0, 0.0)));
+        let mut output = ctx.run_ui(input, |ui| full_screen(app, ui.ctx()));
         output.textures_delta.clear();
+        output.viewport_output[&egui::ViewportId::ROOT]
+            .commands
+            .clone()
+    }
+
+    fn headless_app() -> (tempfile::TempDir, App) {
+        let root = tempfile::tempdir().unwrap();
+        let app = App::headless(
+            crate::paths::AppDirs::under(root.path()),
+            crate::settings::Settings::default(),
+        )
+        .0;
+        (root, app)
+    }
+
+    const WINDOW: egui::Rect = egui::Rect::from_min_max(
+        egui::pos2(100.0, 80.0),
+        egui::pos2(900.0, 680.0),
+    );
+
+    #[cfg(not(target_os = "windows"))]
+    #[test]
+    fn f11_toggles_full_screen() {
+        let (_root, mut app) = headless_app();
+        let ctx = egui::Context::default();
+        for on in [false, true] {
+            let commands = press_f11(&mut app, &ctx, on, WINDOW);
+            assert!(
+                commands.contains(&egui::ViewportCommand::Fullscreen(!on)),
+                "{commands:?}"
+            );
+        }
+    }
+
+    /// On Windows F11 makes a borderless window over the monitor, never
+    /// winit's full screen, and the second press puts the window back.
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn f11_covers_the_monitor_with_a_borderless_window_and_comes_back() {
+        let (_root, mut app) = headless_app();
+        let ctx = egui::Context::default();
+        let commands = press_f11(&mut app, &ctx, false, WINDOW);
+        assert!(
+            commands.contains(&egui::ViewportCommand::Decorations(false)),
+            "{commands:?}"
+        );
+        assert!(
+            !commands
+                .iter()
+                .any(|command| matches!(command, egui::ViewportCommand::Fullscreen(_))),
+            "{commands:?}"
+        );
+        assert!(filling_screen(&ctx));
+        let commands = press_f11(&mut app, &ctx, false, WINDOW);
+        assert!(!filling_screen(&ctx));
+        assert!(
+            commands.contains(&egui::ViewportCommand::Decorations(true)),
+            "{commands:?}"
+        );
+        assert!(
+            commands.contains(&egui::ViewportCommand::InnerSize(WINDOW.size())),
+            "the window gets its size back: {commands:?}"
+        );
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn the_borderless_window_overhangs_the_monitor_by_one_pixel() {
+        let monitor =
+            egui::Rect::from_min_max(egui::pos2(1920.0, 0.0), egui::pos2(3840.0, 1080.0));
+        let (position, size) = borderless::cover(monitor, 2.0);
+        assert_eq!(position, egui::pos2(960.0, 0.0));
+        assert_eq!(size, egui::vec2(960.0, 540.5));
+    }
+
+    #[test]
+    fn a_call_filling_the_screen_leaves_through_its_own_toggle() {
+        let (_root, mut app) = headless_app();
+        let ctx = egui::Context::default();
+        app.call_fullscreen = true;
+        let commands = press_f11(&mut app, &ctx, true, WINDOW);
         assert!(matches!(
             app.actions.as_slice(),
             [Action::ToggleCallFullscreen]
         ));
         assert!(
-            !output.viewport_output[&egui::ViewportId::ROOT]
-                .commands
+            !commands
                 .iter()
-                .any(|command| matches!(command, egui::ViewportCommand::Fullscreen(_)))
+                .any(|command| matches!(command, egui::ViewportCommand::Fullscreen(_))),
+            "{commands:?}"
         );
     }
 }

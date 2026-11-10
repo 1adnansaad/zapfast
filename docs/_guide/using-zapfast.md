@@ -983,10 +983,11 @@ the button under **Calls** brings the full list back.
 In a short window, scroll the rail to reach its lower buttons. Tab and
 Shift+Tab bring the focused button into view, too.
 
-`F11` fills the screen and hides the title bar, as in a browser. On Windows and
-Linux, point at the top edge of the screen and a strip slides down with
-**Minimize**, **Exit full screen** and **Close**; it leaves once the pointer
-moves below it. `F11` again returns to the window.
+`F11` fills the screen and hides the title bar, as in a browser. On Windows it
+is a borderless window over the whole screen, so the screen does not blank on
+the way in or out. On Windows and Linux, point at the top edge of the screen
+and a strip slides down with **Minimize**, **Exit full screen** and **Close**;
+it leaves once the pointer moves below it. `F11` again returns to the window.
 
 ## Notifications and the tray
 

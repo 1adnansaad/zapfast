@@ -313,7 +313,8 @@ Synced to: upstream `v0.21.1` (2026-11-09).
 
 ### F11 full screen
 
-- **What:** F11 toggles full screen (winit's borderless one). On Windows and
+- **What:** F11 toggles full screen (winit's borderless one, except on
+  Windows, below). On Windows and
   Linux the title bar goes with it, so, as in Edge, the pointer at the top
   edge slides down a 32pt strip with "WhatZap", Minimize, Exit full screen
   and Close; it slides away once the pointer moves below it. Close goes
@@ -321,12 +322,19 @@ Synced to: upstream `v0.21.1` (2026-11-09).
   native button does. macOS keeps its own reveal. While a call fills the
   screen (0.20's call full screen), F11 and Exit full screen go through the
   call's own toggle (`Action::ToggleCallFullscreen`), so its button agrees.
+  On Windows it is a borderless window over the monitor, one pixel taller
+  than it, not winit's full screen: a window exactly the monitor's size let
+  the graphics driver take the screen over, which blanked the whole screen
+  for a moment on the way in and out. The window's size and maximized state
+  come back afterwards, and the remembered geometry skips that time.
 - **Why:** a distraction-free window, like Edge's F11.
-- **Files:** `src/ui/mod.rs` (`full_screen`, `strip_shown`, their tests),
+- **Files:** `src/ui/mod.rs` (`full_screen`, `strip_shown`, `filling_screen`,
+  the `borderless` module, their tests), `src/app.rs` (`sync_window_state`),
   `src/ui/keys.rs` (`SHORTCUTS` row), `docs/_guide/using-zapfast.md`.
 - **Cost:** English-only labels. No "press F11 to exit" hint on entry. The
   strip is drawn by the app, not Windows, so it has no snap layouts or
-  window menu.
+  window menu. On Windows the window hangs one pixel below the monitor, so a
+  monitor stacked under it shows that row.
 
 ### Tray menu kept off the taskbar (patched tray-icon)
 

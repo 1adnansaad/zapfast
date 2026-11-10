@@ -7180,6 +7180,11 @@ impl App {
     /// settings, in logical pixels, so a window saved while zoomed opens at
     /// the same size; see [`fastframe_shell::window::Geometry`].
     fn sync_window_state(&mut self, ctx: &egui::Context) {
+        // Fork: F11's borderless window is the monitor's size, not the
+        // window's to come back to (FORK.md).
+        if crate::ui::filling_screen(ctx) {
+            return;
+        }
         let mut geometry = self.settings.window_geometry();
         if geometry.remember(ctx) {
             self.settings.set_window_geometry(geometry);
