@@ -23,6 +23,7 @@ use unicode_bidi::BidiInfo;
 pub fn layout_job(ui: &egui::Ui, job: egui::text::LayoutJob) -> Arc<Galley> {
     let mut galley = ui.painter().layout_job(job);
     reorder_rtl_runs(Arc::make_mut(&mut galley));
+    settle_clusters(Arc::make_mut(&mut galley));
     galley
 }
 
@@ -49,6 +50,7 @@ pub fn layout_editor(
     }
     let mut galley = ui.fonts_mut(|fonts| fonts.layout_job(job));
     reorder_rtl_runs(Arc::make_mut(&mut galley));
+    settle_clusters(Arc::make_mut(&mut galley));
     (galley, clusters)
 }
 
@@ -65,6 +67,7 @@ pub fn layout_field(ui: &egui::Ui, text: &str, format: &TextFormat, _wrap: f32) 
     job.keep_trailing_whitespace = true;
     let mut galley = ui.fonts_mut(|fonts| fonts.layout_job(job));
     reorder_rtl_runs(Arc::make_mut(&mut galley));
+    settle_clusters(Arc::make_mut(&mut galley));
     galley
 }
 
@@ -158,6 +161,88 @@ pub fn reorder_rtl_runs(galley: &mut Galley) {
         align_right(galley);
     }
     refresh_bounds(galley);
+}
+
+/// Fork (FORK.md): gives each left-to-right row one glyph per character
+/// again, which every caret and selection reckoning assumes. A shaped
+/// cluster of several characters can draw more glyphs than it has
+/// characters (Bengali's split vowels draw ো and ৌ in two pieces around
+/// their consonant), and each extra glyph moved every caret after it; it can
+/// also draw them out of logical order (ি before the consonant it follows).
+/// Such a cluster becomes one glyph spanning all it draws, standing for its
+/// first character, then zero-width ones at its right edge for the rest.
+/// Only the glyph list changes: the mesh stays as drawn, so this runs after
+/// [`reorder_rtl_runs`], which rebuilds it. Right-to-left clusters are left
+/// to that.
+fn settle_clusters(galley: &mut Galley) {
+    let text = galley.job.text.as_str();
+    let starts: Vec<Option<usize>> = galley
+        .rows
+        .iter()
+        .map(|placed| placed.row.glyphs.first().map(|glyph| glyph.cluster as usize))
+        .collect();
+    for (index, placed) in galley.rows.iter_mut().enumerate() {
+        let glyphs = &placed.row.glyphs;
+        if !glyphs
+            .windows(2)
+            .any(|pair| pair[0].cluster == pair[1].cluster && !pair[0].rtl)
+        {
+            continue;
+        }
+        let row_end = starts[index + 1..]
+            .iter()
+            .flatten()
+            .next()
+            .copied()
+            .unwrap_or(text.len());
+        let mut settled = Vec::with_capacity(glyphs.len());
+        let mut at = 0;
+        while at < glyphs.len() {
+            let start = glyphs[at].cluster;
+            let count = glyphs[at..]
+                .iter()
+                .take_while(|glyph| glyph.cluster == start)
+                .count();
+            let group = &glyphs[at..at + count];
+            at += count;
+            let end = glyphs
+                .get(at)
+                .map_or(row_end, |glyph| glyph.cluster as usize);
+            let chars: Vec<(usize, char)> = text
+                .get(start as usize..end)
+                .unwrap_or_default()
+                .char_indices()
+                .take_while(|(_, chr)| *chr != '\n')
+                .collect();
+            if count == 1 || group[0].rtl || chars.is_empty() {
+                settled.extend_from_slice(group);
+                continue;
+            }
+            let left = group
+                .iter()
+                .map(|glyph| glyph.pos.x)
+                .fold(f32::INFINITY, f32::min);
+            let right = group
+                .iter()
+                .map(Glyph::max_x)
+                .fold(f32::NEG_INFINITY, f32::max);
+            for (offset, chr) in chars {
+                let mut glyph = group[0];
+                glyph.chr = chr;
+                glyph.cluster = start + offset as u32;
+                if offset == 0 {
+                    glyph.pos.x = left;
+                    glyph.advance_width = right - left;
+                } else {
+                    glyph.pos.x = right;
+                    glyph.advance_width = 0.0;
+                    glyph.uv_rect = Default::default();
+                }
+                settled.push(glyph);
+            }
+        }
+        Arc::make_mut(&mut placed.row).glyphs = settled;
+    }
 }
 
 /// The bidi paragraph last used, keyed by its byte offset in the galley text.
@@ -1818,6 +1903,105 @@ mod tests {
             assert!(
                 rows[0].1 < rows[1].0,
                 "wrapped rows must stay in logical order for {text:?}: {spans:?}"
+            );
+        }
+    }
+
+    /// Two characters shaped as one cluster in three pieces, the way ো draws
+    /// around its consonant: the caret after them is at the cluster's right
+    /// edge, not before its last piece.
+    #[test]
+    fn a_cluster_drawn_in_more_pieces_than_characters_keeps_the_caret() {
+        let ctx = egui::Context::default();
+        let mut galley = layout_raw(&ctx, "ab");
+        let row = Arc::make_mut(&mut galley.rows[0].row);
+        let (a, b) = (row.glyphs[0], row.glyphs[1]);
+        let half = b.advance_width / 2.0;
+        let mut piece = b;
+        piece.cluster = a.cluster;
+        piece.chr = a.chr;
+        piece.advance_width = half;
+        let mut tail = piece;
+        tail.pos.x = b.pos.x + half;
+        row.glyphs = vec![a, piece, tail];
+        settle_clusters(&mut galley);
+        let glyphs = &galley.rows[0].glyphs;
+        assert_eq!(glyphs.len(), 2, "one glyph per character");
+        assert_eq!((glyphs[0].chr, glyphs[1].chr), ('a', 'b'));
+        assert_eq!(glyphs[1].cluster, a.cluster + 1);
+        assert!((glyphs[0].pos.x - a.pos.x).abs() < 0.01);
+        assert!((glyphs[0].max_x() - b.max_x()).abs() < 0.01);
+        assert!((caret_x(&galley, 2) - b.max_x()).abs() < 0.5);
+        assert!((caret_x(&galley, 0) - a.pos.x).abs() < 0.5);
+    }
+
+    /// Bengali, shaped by a font that has it: one glyph per character, and a
+    /// caret that only moves right as the text goes on and ends after the
+    /// last thing drawn. Skipped where no Bengali font is installed.
+    #[test]
+    fn bengali_keeps_the_caret_after_what_was_typed() {
+        const CANDIDATES: &[&str] = &[
+            r"C:\Windows\Fonts\Nirmala.ttc",
+            r"C:\Windows\Fonts\Nirmala.ttf",
+            r"C:\Windows\Fonts\vrinda.ttf",
+            "/usr/share/fonts/truetype/noto/NotoSansBengali-Regular.ttf",
+            "/usr/share/fonts/noto/NotoSansBengali-Regular.ttf",
+            "/usr/share/fonts/google-noto/NotoSansBengali-Regular.ttf",
+            "/usr/share/fonts/truetype/lohit-bengali/Lohit-Bengali.ttf",
+            "/System/Library/Fonts/Supplemental/Bangla Sangam MN.ttc",
+        ];
+        let Some(face) = std::env::var_os("ZAPFAST_TEST_BENGALI_FONT")
+            .map(PathBuf::from)
+            .into_iter()
+            .chain(CANDIDATES.iter().map(PathBuf::from))
+            .find(|path| path.is_file())
+            .and_then(|path| std::fs::read(path).ok())
+        else {
+            eprintln!("no Bengali font installed; skipping");
+            return;
+        };
+        let ctx = egui::Context::default();
+        let mut fonts = FontDefinitions::default();
+        fonts
+            .font_data
+            .insert("bengali".into(), Arc::new(FontData::from_owned(face)));
+        fonts
+            .families
+            .insert(FontFamily::Proportional, vec!["bengali".into()]);
+        ctx.set_fonts(fonts);
+        for text in ["কো", "কৌশল", "আমি তোমাকে ভালোবাসি", "ক্ষমা কর্ম প্রিয়"] {
+            let galley = std::cell::RefCell::new(None);
+            let mut output = ctx.run_ui(
+                egui::RawInput {
+                    screen_rect: Some(egui::Rect::from_min_size(Pos2::ZERO, vec2(800.0, 160.0))),
+                    ..Default::default()
+                },
+                |ui| {
+                    let job = LayoutJob::single_section(
+                        text.to_owned(),
+                        TextFormat::simple(FontId::proportional(18.0), Color32::WHITE),
+                    );
+                    *galley.borrow_mut() = Some(layout_job(ui, job));
+                },
+            );
+            output.textures_delta.clear();
+            let galley = galley.into_inner().expect("galley");
+            let chars = text.chars().count();
+            assert_eq!(galley.rows[0].glyphs.len(), chars, "{text:?}");
+            let carets: Vec<f32> = (0..=chars).map(|index| caret_x(&galley, index)).collect();
+            assert!(
+                carets.windows(2).all(|pair| pair[1] >= pair[0] - 0.5),
+                "{text:?}: the caret steps back somewhere in {carets:?}"
+            );
+            let drawn = galley.rows[0]
+                .glyphs
+                .iter()
+                .map(Glyph::max_x)
+                .fold(0.0_f32, f32::max);
+            assert!(
+                (carets[chars] - drawn).abs() < 0.5,
+                "{text:?}: the caret ends at {}, the text at {drawn}",
+                carets[chars]
             );
         }
     }

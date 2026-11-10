@@ -395,6 +395,29 @@ Synced to: upstream `v0.21.1` (2026-11-09).
   unused, so syncs do not conflict there.
 - **Cost:** none known.
 
+### Caret after Bengali clusters
+
+- **What:** typing Bengali (Avro or any Unicode Bangla input), the caret
+  stands after the last letter typed. A shaped cluster can draw more glyphs
+  than it has characters: the split vowels ো and ৌ draw in two pieces around
+  their consonant, so কো is two characters and three glyphs, and egui
+  counts one glyph per character, so every caret after it sat one glyph too
+  far left. `bidi::settle_clusters`, run after the bidi pass in every layout
+  of `src/bidi.rs`, turns such a left-to-right cluster into one glyph
+  spanning all it draws, for its first character, and zero-width ones at its
+  right edge for the rest. Only the glyph list changes, not the drawing.
+- **Why:** reported typing with Avro.
+- **Files:** `src/bidi.rs` (`settle_clusters`, its three calls and two
+  tests: one builds the extra glyph by hand, one shapes real Bengali when a
+  font for it is installed, Nirmala UI or Vrinda on Windows, or set
+  `ZAPFAST_TEST_BENGALI_FONT`).
+- **Cost:** a caret inside a Bengali cluster (between a consonant and its
+  vowel sign) shows at the cluster's right edge. Text fields that do not use
+  `src/bidi.rs` (egui's default layout, in a few dialogs) keep the old
+  behaviour. The real fix belongs in crmne/egui's shaping
+  (`emit_continuation_glyphs` handles only fewer glyphs than characters);
+  worth offering there.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream
