@@ -1007,7 +1007,7 @@ GNOME's Dash). On every platform, `zapfast quit` in a terminal or a script quits
 the running copy the same way, and does nothing when none runs. A copy from
 before this command is left running, and the command says so and fails.
 With several numbers linked, a notification's title also names the number it
-came to. The tray icon shows how many chats are unread, up to 9+. It is white on a dark
+came to. The tray icon carries no unread count. It is white on a dark
 panel and black on a light one: on Windows it follows the taskbar, and on Linux
 the desktop's colour scheme (GNOME's top bar counts as dark). A Linux desktop
 that does not say keeps the green icon. Launchers that support

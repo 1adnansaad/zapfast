@@ -921,8 +921,6 @@ pub struct App {
     /// Dock clicks on macOS, which bring a closed window back with or without
     /// a menu-bar item. `None` elsewhere, and in tests and demos.
     dock: Option<fastframe_tray::Dock>,
-    /// The unread level the tray icon shows (`util::tray_badge_level`).
-    tray_badge: u32,
     /// A new window asks for the focus with its first frame.
     wants_focus: bool,
     /// When the wheel last switched account.
@@ -1787,7 +1785,6 @@ impl App {
             tray_allowed: false,
             tray_failed: false,
             dock: None,
-            tray_badge: 0,
             wants_focus: false,
             account_wheeled: None,
             tray_colour_checked: None,
@@ -2376,7 +2373,6 @@ impl App {
         // No session bus, say: asked again only if the setting is turned
         // back on, not on every frame.
         self.tray_failed = self.tray.is_none();
-        self.tray_badge = 0;
         self.tray_colour_checked = None;
     }
 
@@ -2401,16 +2397,8 @@ impl App {
             }
         }
         self.sync_tray_colour(Instant::now());
-        // The same count as the taskbar's; a new icon only when it shows.
-        let count = self.unread_chat_count_everywhere();
-        let level = crate::util::tray_badge_level(count);
-        if level != self.tray_badge
-            && let Some(tray) = &mut self.tray
-        {
-            let (icon, template) = crate::util::tray_icons(count);
-            tray.set_icon(icon, Some(template));
-            self.tray_badge = level;
-        }
+        // Fork: the tray icon carries no unread count; the taskbar's red dot
+        // says there are unread chats (FORK.md).
     }
 
     /// Keeps the tray icon monochrome against the panel, as the macOS menu

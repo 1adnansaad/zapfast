@@ -383,6 +383,18 @@ Synced to: upstream `v0.21.1` (2026-11-09).
   prefix, so `typed_number` stays separate. No profile picture on the
   row, so typing never asks for a stranger's.
 
+### Tray icon without an unread count
+
+- **What:** the tray icon stays the plain icon. 0.21 redraws it with the
+  number of unread chats (up to 9+); the fork never does.
+- **Why:** no message marks, read or unread, in the tray; the taskbar
+  button's red dot already says there are unread chats.
+- **Files:** `src/app.rs` (`sync_tray` no longer sets a badged icon, and the
+  `tray_badge` field is gone), `docs/_guide/using-zapfast.md`. Upstream's
+  badge drawing in `src/util.rs` (`tray_icons`, `badged`) is left in place,
+  unused, so syncs do not conflict there.
+- **Cost:** none known.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream
