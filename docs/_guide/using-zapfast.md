@@ -748,6 +748,8 @@ Click a message result to jump to it, or a contact to start a chat. Use
 `Alt+↑/↓`, or `Ctrl+Shift+[` and `Ctrl+Shift+]` as in WhatsApp, to switch chats
 without leaving the composer (Command instead of Ctrl on macOS), and
 `Ctrl+1` through `Ctrl+9` to open the chat at that position in the list.
+Hold `Ctrl` by itself for a moment and each of those chats shows its keys;
+hold `Alt` and the chats `Alt+↑` and `Alt+↓` open show theirs.
 `Ctrl+0` opens the search bar. In **New chat** (`Ctrl+N`), type or paste any
 number with its country code, such as `+1 (555) 123-4567`, and click it or
 press Enter: WhatZap checks that it is on WhatsApp and opens the chat. Within an open

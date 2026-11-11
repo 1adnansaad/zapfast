@@ -1010,6 +1010,20 @@ fn list(app: &mut App, ui: &mut egui::Ui) {
     } else {
         0.0
     };
+    // Fork: Ctrl or Alt held alone names the chats its shortcuts open
+    // (FORK.md).
+    let hints = super::keys::modifier_hint(ui.ctx()).filter(|_| {
+        app.dialog.is_none()
+            && !app.show_update
+            && app.picker.is_none()
+            && app.reaction_target.is_none()
+            && app.recording.is_none()
+            && !egui::Popup::is_any_open(ui.ctx())
+    });
+    let open_row = app
+        .open_chat
+        .as_ref()
+        .and_then(|open| chats.iter().position(|chat| chat.id == *open));
     let output = scroll_area.show_rows(ui, row_height, total, |ui, range| {
         if carried != 0.0 {
             ui.scroll_with_delta_animation(
@@ -1023,6 +1037,9 @@ fn list(app: &mut App, ui: &mut egui::Ui) {
             let response = ui
                 .push_id(("chat", &chat.id), |ui| row(app, ui, chat))
                 .inner;
+            if let Some(keys) = hints.and_then(|hint| hint_keys(hint, index, open_row, total)) {
+                key_hint(ui, &palette, response.rect, &keys);
+            }
             // Store the row rect for interaction tests.
             ui.ctx()
                 .data_mut(|data| data.insert_temp(chat_row_id(&chat.id), response.rect));
@@ -1046,6 +1063,58 @@ fn list(app: &mut App, ui: &mut egui::Ui) {
         data.insert_temp(list_offset_id(), output.state.offset.y);
         data.insert_temp(list_offset_id().with("id"), output.id);
     });
+}
+
+/// Fork (FORK.md): the shortcut that opens the chat at `index` of `total`,
+/// for the modifier held: Ctrl+1..9 for the first nine, or Alt+↑/↓ for the
+/// chats beside the open one (`open`), as `keys::handle` steps, wrapping
+/// round. Without an open chat both arrows open the first.
+fn hint_keys(
+    hint: super::keys::ModifierHint,
+    index: usize,
+    open: Option<usize>,
+    total: usize,
+) -> Option<String> {
+    use super::keys::ModifierHint;
+    match hint {
+        ModifierHint::Numbers => (index < 9).then(|| format!("Ctrl+{}", index + 1)),
+        ModifierHint::Steps => {
+            let Some(open) = open else {
+                return (index == 0).then(|| "Alt+↓".to_owned());
+            };
+            if index == open {
+                None
+            } else if index == (open + 1) % total {
+                Some("Alt+↓".to_owned())
+            } else if index == (open + total - 1) % total {
+                Some("Alt+↑".to_owned())
+            } else {
+                None
+            }
+        }
+    }
+}
+
+/// A key cap at the right end of a chat row, over its time and badges.
+fn key_hint(ui: &egui::Ui, palette: &Palette, row: Rect, keys: &str) {
+    let galley = ui.painter().layout_no_wrap(
+        super::keys::label(keys),
+        theme::semibold(11.5),
+        palette.text,
+    );
+    let size = galley.size() + vec2(12.0, 6.0);
+    let cap = Rect::from_min_size(
+        pos2(row.right() - 12.0 - size.x, row.center().y - size.y / 2.0),
+        size,
+    );
+    ui.painter().rect(
+        cap,
+        egui::CornerRadius::same(5),
+        palette.surface,
+        egui::Stroke::new(1.0, palette.outline),
+        egui::StrokeKind::Inside,
+    );
+    ui.painter().galley(cap.center() - galley.size() / 2.0, galley, palette.text);
 }
 
 /// Whether the list scrolled by `salt` is near enough its top to follow a sent
@@ -2436,6 +2505,29 @@ fn voice_speed_menu(app: &mut App, ui: &mut egui::Ui, palette: &Palette, chat: &
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Ctrl names the first nine chats, and Alt the two beside the open one,
+    /// wrapping round as Alt+↑ and Alt+↓ do.
+    #[test]
+    fn modifier_hints_name_the_chats_their_shortcuts_open() {
+        use super::super::keys::ModifierHint::{Numbers, Steps};
+        let numbers: Vec<_> = (0..11)
+            .map(|index| hint_keys(Numbers, index, None, 11))
+            .collect();
+        assert_eq!(numbers[0].as_deref(), Some("Ctrl+1"));
+        assert_eq!(numbers[8].as_deref(), Some("Ctrl+9"));
+        assert_eq!(numbers[9], None);
+        let steps = |open| {
+            (0..4)
+                .map(|index| hint_keys(Steps, index, open, 4))
+                .collect::<Vec<_>>()
+        };
+        let (up, down) = (Some("Alt+↑".to_owned()), Some("Alt+↓".to_owned()));
+        assert_eq!(steps(Some(1)), [up.clone(), None, down.clone(), None]);
+        assert_eq!(steps(Some(0)), [None, down.clone(), None, up], "round");
+        assert_eq!(steps(None), [down, None, None, None]);
+        assert_eq!(hint_keys(Steps, 0, Some(0), 1), None, "already open");
+    }
 
     /// A header title shows only when it fits before its buttons, whatever
     /// the language makes of it.

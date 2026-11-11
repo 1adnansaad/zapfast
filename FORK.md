@@ -418,6 +418,24 @@ Synced to: upstream `v0.21.1` (2026-11-09).
   (`emit_continuation_glyphs` handles only fewer glyphs than characters);
   worth offering there.
 
+### Key hints while Ctrl or Alt is held
+
+- **What:** holding Ctrl (Command on macOS) by itself for 0.4 s puts a key cap
+  at the right end of the first nine chat rows, "Ctrl+1" to "Ctrl+9", the
+  chats those keys open; holding Alt (Option) puts "Alt+↑" and "Alt+↓" on the
+  chats beside the open one, as Alt+↑/↓ steps, wrapping round. Any key,
+  click or wheel while the modifier is held keeps the hints away until it is
+  let go, so Ctrl+C never flashes them. Not while a dialog, menu, picker or
+  recording is up, as the shortcuts themselves are not.
+- **Why:** as Claude Desktop shows its chats' keys while Ctrl is held.
+- **Files:** `src/ui/keys.rs` (`ModifierHint`, `track_modifier_hold`, run
+  first in `handle`, `modifier_hint`, and a test), `src/ui/chats.rs`
+  (`hint_keys`, `key_hint`, drawn in `list`, and a test),
+  `docs/_guide/using-zapfast.md`.
+- **Cost:** English key names, as in the shortcuts dialog. The cap covers the
+  row's time and badges while it shows. The collapsed list (Ctrl+B) and the
+  search results show no hints.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream

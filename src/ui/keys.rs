@@ -13,6 +13,7 @@ fn jump_keys_reach_chat(editing_text: bool, composer_focused: bool, composer_emp
 
 /// Routes keyboard commands to actions, respecting overlays and text focus.
 pub fn handle(app: &mut App, ctx: &egui::Context) {
+    track_modifier_hold(ctx);
     // A focused menu takes what is typed before any shortcut sees it.
     super::widgets::menu_letters(ctx);
     if app.picture_edit.is_some() {
@@ -1144,6 +1145,78 @@ pub const SHORTCUTS: &[(&str, &str)] = &[
     ("Ctrl+Q", "Quit"),
 ];
 
+/// Fork (FORK.md): what a modifier held by itself shows on the chat list.
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum ModifierHint {
+    /// Ctrl (Command on macOS): the chats Ctrl+1..9 opens.
+    Numbers,
+    /// Alt (Option on macOS): the chats Alt+↑ and Alt+↓ open.
+    Steps,
+}
+
+/// How long a modifier is held alone before its hints show, so a quick
+/// Ctrl+C never flashes them.
+const HINT_DELAY: f64 = 0.4;
+
+fn modifier_hold_id() -> egui::Id {
+    egui::Id::new("modifier-hold")
+}
+
+/// Follows Ctrl or Alt held by itself in a focused window: which, since
+/// when, and whether anything else happened meanwhile (a key, a click, a
+/// wheel), which keeps its hints away until the modifier is let go.
+fn track_modifier_hold(ctx: &egui::Context) {
+    let (modifiers, focused, now, busy) = ctx.input(|input| {
+        let busy = input.events.iter().any(|event| {
+            matches!(
+                event,
+                egui::Event::Key { .. }
+                    | egui::Event::Text(_)
+                    | egui::Event::Copy
+                    | egui::Event::Cut
+                    | egui::Event::Paste(_)
+                    | egui::Event::PointerButton { .. }
+                    | egui::Event::MouseWheel { .. }
+                    | egui::Event::Zoom(_)
+            )
+        });
+        (input.modifiers, input.focused, input.time, busy)
+    });
+    let held = if !focused {
+        None
+    } else if modifiers.matches_exact(Modifiers::COMMAND) {
+        Some(ModifierHint::Numbers)
+    } else if modifiers.matches_exact(Modifiers::ALT) {
+        Some(ModifierHint::Steps)
+    } else {
+        None
+    };
+    let was = ctx.data(|data| data.get_temp::<(ModifierHint, f64, bool)>(modifier_hold_id()));
+    let hold = held.map(|kind| match was {
+        Some((before, since, spoiled)) if before == kind => (kind, since, spoiled || busy),
+        _ => (kind, now, busy),
+    });
+    match hold {
+        Some(hold) => {
+            let (_, since, spoiled) = hold;
+            let left = HINT_DELAY - (now - since);
+            if !spoiled && left > 0.0 {
+                ctx.request_repaint_after_secs(left as f32);
+            }
+            ctx.data_mut(|data| data.insert_temp(modifier_hold_id(), hold));
+        }
+        None => ctx.data_mut(|data| data.remove::<(ModifierHint, f64, bool)>(modifier_hold_id())),
+    }
+}
+
+/// The hints a modifier held alone for [`HINT_DELAY`] asks for, if any.
+pub fn modifier_hint(ctx: &egui::Context) -> Option<ModifierHint> {
+    let now = ctx.input(|input| input.time);
+    ctx.data(|data| data.get_temp::<(ModifierHint, f64, bool)>(modifier_hold_id()))
+        .filter(|(_, since, spoiled)| !spoiled && now - since >= HINT_DELAY)
+        .map(|(kind, ..)| kind)
+}
+
 /// Uses Command and Option labels on macOS.
 pub fn label(keys: &str) -> String {
     if cfg!(target_os = "macos") {
@@ -1159,6 +1232,52 @@ pub fn label(keys: &str) -> String {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Ctrl or Alt held by itself shows its hints after a moment, until it is
+    /// let go; a shortcut pressed meanwhile keeps them away for that hold.
+    #[test]
+    fn a_modifier_held_alone_shows_its_hints_after_a_moment() {
+        let ctx = egui::Context::default();
+        let frame = |time: f64, modifiers: Modifiers, events: Vec<egui::Event>| {
+            let input = egui::RawInput {
+                time: Some(time),
+                events: std::iter::once(egui::Event::ModifiersChanged(modifiers))
+                    .chain(events)
+                    .collect(),
+                ..Default::default()
+            };
+            let mut output = ctx.run_ui(input, |ui| track_modifier_hold(ui.ctx()));
+            output.textures_delta.clear();
+            modifier_hint(&ctx)
+        };
+        assert_eq!(frame(0.0, Modifiers::COMMAND, vec![]), None, "not at once");
+        assert_eq!(
+            frame(0.5, Modifiers::COMMAND, vec![]),
+            Some(ModifierHint::Numbers)
+        );
+        assert_eq!(frame(0.6, Modifiers::NONE, vec![]), None, "gone when let go");
+        assert_eq!(frame(1.0, Modifiers::ALT, vec![]), None);
+        assert_eq!(frame(1.5, Modifiers::ALT, vec![]), Some(ModifierHint::Steps));
+        let copy = egui::Event::Key {
+            key: Key::C,
+            physical_key: None,
+            pressed: true,
+            repeat: false,
+            modifiers: Modifiers::COMMAND,
+        };
+        assert_eq!(frame(2.0, Modifiers::COMMAND, vec![copy]), None);
+        assert_eq!(frame(3.0, Modifiers::COMMAND, vec![]), None, "Ctrl+C held on");
+        assert_eq!(frame(3.1, Modifiers::NONE, vec![]), None);
+        assert_eq!(
+            frame(3.2, Modifiers::COMMAND | Modifiers::SHIFT, vec![]),
+            None
+        );
+        assert_eq!(
+            frame(3.8, Modifiers::COMMAND | Modifiers::SHIFT, vec![]),
+            None,
+            "only a modifier held alone"
+        );
+    }
 
     /// An app whose open chat holds `messages`, by id and content, in order,
     /// with the folder it keeps its files in, which goes when dropped.
