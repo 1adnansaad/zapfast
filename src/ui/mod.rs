@@ -902,17 +902,20 @@ pub fn filling_screen(ctx: &egui::Context) -> bool {
 /// Windows: F11's full screen is a borderless window over the monitor, one
 /// pixel taller than it, instead of winit's full screen. A window exactly the
 /// monitor's size lets the graphics driver take the screen over for it, which
-/// blanks the whole screen for a moment on the way in and out.
+/// blanks the whole screen for a moment on the way in and out. The taskbar is
+/// told the window fills the screen, or it stays on top of it.
 #[cfg(target_os = "windows")]
 mod borderless {
     use egui::{Pos2, Rect, Vec2, ViewportCommand, pos2, vec2};
 
-    /// The window as it was, to go back to.
+    /// The window as it was, to go back to, and the handle the taskbar was
+    /// told fills the screen (0 for none).
     #[derive(Clone, Copy, Default)]
     struct Restore {
         position: Pos2,
         size: Vec2,
         maximized: bool,
+        window: isize,
     }
 
     fn id() -> egui::Id {
@@ -940,6 +943,10 @@ mod borderless {
             return;
         };
         let (position, size) = cover(monitor, ppp);
+        let window = our_window().unwrap_or_default();
+        if window != 0 {
+            mark_full_screen(window, true);
+        }
         ctx.data_mut(|data| {
             data.insert_temp(
                 id(),
@@ -947,6 +954,7 @@ mod borderless {
                     position: outer.min,
                     size: inner.size(),
                     maximized,
+                    window,
                 },
             )
         });
@@ -962,6 +970,9 @@ mod borderless {
         let Some(restore) = ctx.data_mut(|data| data.remove_temp::<Restore>(id())) else {
             return;
         };
+        if restore.window != 0 {
+            mark_full_screen(restore.window, false);
+        }
         ctx.send_viewport_cmd(ViewportCommand::Decorations(
             !fastframe_titlebar::enabled(),
         ));
@@ -969,6 +980,55 @@ mod borderless {
         ctx.send_viewport_cmd(ViewportCommand::InnerSize(restore.size));
         if restore.maximized {
             ctx.send_viewport_cmd(ViewportCommand::Maximized(true));
+        }
+    }
+
+    /// Our window, while it is the one in front: F11 and the strip are used
+    /// in it, so it is when either asks.
+    fn our_window() -> Option<isize> {
+        use windows::Win32::UI::WindowsAndMessaging::{
+            GetForegroundWindow, GetWindowThreadProcessId,
+        };
+        // SAFETY: takes nothing; the handle it gives is checked below.
+        let window = unsafe { GetForegroundWindow() };
+        let mut process = 0;
+        // SAFETY: a window handle from the system, and room for its process.
+        unsafe { GetWindowThreadProcessId(window, Some(&raw mut process)) };
+        (!window.is_invalid() && process == std::process::id()).then_some(window.0 as isize)
+    }
+
+    /// Tells the taskbar whether `window` fills the screen, so it goes below
+    /// it while it is in front: a window that merely covers the screen does
+    /// not send it there.
+    fn mark_full_screen(window: isize, on: bool) {
+        use windows::Win32::Foundation::{HWND, RPC_E_CHANGED_MODE};
+        use windows::Win32::System::Com::{
+            CLSCTX_INPROC_SERVER, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx,
+            CoUninitialize,
+        };
+        use windows::Win32::UI::Shell::{ITaskbarList2, TaskbarList};
+        // SAFETY: on the window's own thread; COM is initialized for the call
+        // when it was not already, and the list is released before that is
+        // undone.
+        unsafe {
+            let initialized = CoInitializeEx(None, COINIT_APARTMENTTHREADED);
+            if initialized.is_err() && initialized != RPC_E_CHANGED_MODE {
+                return;
+            }
+            {
+                let list: windows::core::Result<ITaskbarList2> =
+                    CoCreateInstance(&TaskbarList, None, CLSCTX_INPROC_SERVER);
+                let marked = list.and_then(|list| {
+                    list.HrInit()?;
+                    list.MarkFullscreenWindow(HWND(window as *mut std::ffi::c_void), on)
+                });
+                if let Err(error) = marked {
+                    log::debug!("the taskbar did not take the full screen mark: {error}");
+                }
+            }
+            if initialized.is_ok() {
+                CoUninitialize();
+            }
         }
     }
 

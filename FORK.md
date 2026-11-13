@@ -329,8 +329,10 @@ Synced to: upstream `v0.21.1` (2026-11-09).
   On Windows it is a borderless window over the monitor, one pixel taller
   than it, not winit's full screen: a window exactly the monitor's size let
   the graphics driver take the screen over, which blanked the whole screen
-  for a moment on the way in and out. The window's size and maximized state
-  come back afterwards, and the remembered geometry skips that time.
+  for a moment on the way in and out. The taskbar is told the window fills
+  the screen (`ITaskbarList2::MarkFullscreenWindow`), or it stays on top of
+  it. The window's size and maximized state come back afterwards, and the
+  remembered geometry skips that time.
 - **Why:** a distraction-free window, like Edge's F11.
 - **Files:** `src/ui/mod.rs` (`full_screen`, `strip_shown`, `filling_screen`,
   the `borderless` module, their tests), `src/app.rs` (`sync_window_state`),
