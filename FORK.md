@@ -463,6 +463,23 @@ Synced to: upstream `v0.21.3` (2026-11-18).
 - **Cost:** none known. Explorer's exit code says nothing, so a Windows
   Explorer that starts but cannot select reports no error.
 
+### No GitHub automation from upstream
+
+- **What:** upstream's whole `.github/` folder is gone: its workflows (CI,
+  Policy, docs, packaging, release, triage), issue and pull request
+  templates, triage config, sponsor button and the scripts the workflows run.
+  The `upstream` remote's push URL is set to a dead one, so nothing can be
+  pushed to crmne/zapfast from this checkout.
+- **Why:** after the 0.21.3 push the workflows ran on this repository and
+  failed (Policy refuses the tray-icon patch's source), mailing every failure.
+  This repository is mine alone.
+- **Files:** `.github/` (removed), `AGENTS.md` (the fork section's last
+  bullet), `assets/fork-merge-prompt.md` (step 6 removes it again at each
+  sync).
+- **Cost:** no CI on this repository. A sync where upstream changed or added
+  anything under `.github/` brings those files back or stops on a
+  modify/delete conflict: remove them again (`git rm -r .github`).
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream

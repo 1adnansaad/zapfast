@@ -25,7 +25,11 @@ I keep a personal fork of ZapFast at {checkout} (remote `origin` is my fork,
    of upstream's, and the updated `Cargo.lock` is committed. Run none of the
    other Definition of done checks (fmt, clippy, tests, doc); list them for
    me to run, with what to try in the app for each entry the sync touched.
-6. Update FORK.md: the "Synced to" line, and any entry that changed.
-7. Show me `git log --oneline v{new}..main` and summarize what changed and
-   what you decided. Do not push; I will run
-   `git push --force-with-lease origin main` after reviewing.
+6. Update FORK.md: the "Synced to" line, and any entry that changed. Keep
+   `.github/` out of my repo: when upstream changed or added files there, the
+   rebase brings them back, so remove them again (`git rm -r .github`) in a
+   commit of its own. Their workflows would run on my fork and mail me.
+7. Push `main` to `origin` yourself with `git push --force-with-lease origin
+   main` (`origin` is my fork; never push to `upstream`), then show me
+   `git log --oneline v{new}..main` and summarize what changed and what you
+   decided.

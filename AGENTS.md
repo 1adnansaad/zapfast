@@ -898,3 +898,8 @@ result, such as the definition of done's check list and `--demo-shot`.
 - Finish by handing the user the next steps: the remaining commands from the
   definition of done, and what to open in the app and look for. Then wait for
   their report.
+- This repository is the user's own. Push to `origin` yourself when work is
+  meant to go there, and never tell the user to push. Never push to
+  `upstream` (crmne/zapfast), open pull requests there, or suggest offering a
+  change upstream. Upstream's `.github/` (CI, issue templates, triage) stays
+  out of this repository: its workflows would run here and mail the user.
