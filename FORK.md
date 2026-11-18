@@ -438,6 +438,23 @@ Synced to: upstream `v0.21.1` (2026-11-09).
   row's time and badges while it shows. The collapsed list (Ctrl+B) and the
   search results show no hints.
 
+### Show in folder selects the file
+
+- **What:** a downloaded attachment's **Show in folder** opens its folder
+  with the file already selected: Explorer's `/select,` on Windows,
+  `open -R` on macOS, the file manager's `ShowItems` on Linux (which the log
+  already used). A file that is gone opens the bare folder, as before. The
+  log's fallback, when nothing opens it, now selects it the same way on
+  Windows and macOS too.
+- **Why:** to drag, rename or copy the file at once instead of hunting for it.
+- **Files:** `src/opener.rs` (`reveal`, `reveal_attempts`, `select`),
+  `src/model.rs` (`Action::ShowInFolder`), `src/backend.rs` and
+  `src/backend/worker.rs` (`Command::ShowInFolder`, off the interface
+  thread), `src/app.rs` (the action, and a test), `src/ui/conversation.rs`
+  (the menu item).
+- **Cost:** none known. Explorer's exit code says nothing, so a Windows
+  Explorer that starts but cannot select reports no error.
+
 ## Dropped (upstream does it now)
 
 - **Ctrl+1 to Ctrl+9 open the nth chat.** Written here first; upstream

@@ -8109,6 +8109,13 @@ impl App {
                     self.toast_error("The folder is unavailable");
                 }
             }
+            Action::ShowInFolder(path) => {
+                if path.is_file() {
+                    self.backend.send(Command::ShowInFolder(path));
+                } else if let Some(folder) = path.parent() {
+                    self.actions.push(Action::OpenFolder(folder.to_owned()));
+                }
+            }
             Action::OpenUrl(url) => {
                 if let Some((token, video)) = crate::safety::call_link(&url) {
                     if crate::calls::group_calls_enabled() {
@@ -18205,6 +18212,32 @@ mod tests {
             commands.try_recv(),
             Ok(Command::PrepareClipboardImage(p)) if p == path
         ));
+    }
+
+    #[test]
+    fn show_in_folder_selects_the_file_or_opens_the_folder_once_it_is_gone() {
+        let mut app = app();
+        let (backend, mut commands) = Backend::recording();
+        app.backend = backend;
+        let ctx = egui::Context::default();
+        let folder = tempfile::tempdir().unwrap();
+        let path = folder.path().join("photo.jpg");
+        std::fs::write(&path, b"jpeg").unwrap();
+
+        app.apply(Action::ShowInFolder(path.clone()), &ctx);
+        assert!(matches!(
+            commands.try_recv(),
+            Ok(Command::ShowInFolder(p)) if p == path
+        ));
+
+        std::fs::remove_file(&path).unwrap();
+        app.apply(Action::ShowInFolder(path.clone()), &ctx);
+        assert!(commands.try_recv().is_err(), "nothing to select");
+        assert!(
+            app.actions
+                .iter()
+                .any(|action| matches!(action, Action::OpenFolder(f) if f == folder.path()))
+        );
     }
 
     #[test]

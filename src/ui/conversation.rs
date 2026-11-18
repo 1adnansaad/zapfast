@@ -7722,7 +7722,7 @@ fn context_menu(
                         name: attachment_name(&message.content, path),
                     });
                 }
-                if let Some(folder) = path.parent()
+                if path.parent().is_some()
                     && widgets::menu_item(
                         ui,
                         &palette,
@@ -7730,7 +7730,7 @@ fn context_menu(
                         &crate::i18n::gettext(view.locale, "Show in folder"),
                     )
                 {
-                    actions.push(Action::OpenFolder(folder.to_path_buf()));
+                    actions.push(Action::ShowInFolder(path.clone()));
                 }
             }
             None => {

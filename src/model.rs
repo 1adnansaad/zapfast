@@ -2964,6 +2964,9 @@ pub enum Action {
     /// takes it, and says so when neither works.
     OpenLog(PathBuf),
     OpenFolder(PathBuf),
+    /// Shows a downloaded file selected in its folder, or the bare folder
+    /// when the file is gone.
+    ShowInFolder(PathBuf),
     /// Saves a copy of a downloaded attachment where the person chooses.
     ExportChat {
         chat: ChatId,

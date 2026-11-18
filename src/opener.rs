@@ -14,12 +14,23 @@ use std::path::Path;
 /// folder. Blocks for up to a few seconds per attempt, so call it off the
 /// interface thread. The error names the file so the reader can go there.
 pub fn open_or_reveal(path: &Path) -> Result<(), String> {
-    first_success(&attempts(path)).map_err(|error| {
+    let mut attempts = vec![open_attempt(path)];
+    attempts.extend(reveal_attempts(path));
+    first_success(&attempts).map_err(|error| {
         format!(
             "Could not open {}: {error}. Open it from its folder instead.",
             path.display()
         )
     })
+}
+
+/// Shows `path` selected in its folder, so it can be dragged, renamed or
+/// copied at once, or opens the folder when the file manager cannot select
+/// it. Blocks briefly, so call it off the interface thread. The error leaves
+/// the file's name out: an attachment's can come from a message.
+pub fn reveal(path: &Path) -> Result<(), String> {
+    first_success(&reveal_attempts(path))
+        .map_err(|error| format!("Could not show the file in its folder: {error}"))
 }
 
 type Attempt<'a> = Box<dyn Fn() -> Result<(), String> + 'a>;
@@ -40,36 +51,67 @@ fn first_success(attempts: &[Attempt<'_>]) -> Result<(), String> {
     Err(last)
 }
 
-#[cfg(all(unix, not(target_os = "macos")))]
-fn attempts(path: &Path) -> Vec<Attempt<'_>> {
-    use std::process::Command;
-    let mut attempts: Vec<Attempt<'_>> = vec![
-        // GLib launches the default application itself, in a terminal when
-        // its desktop entry asks for one, and exits non-zero when it cannot.
-        Box::new(move || linux::launch(Command::new("gio").arg("open").arg(path))),
-        // The file manager, with the file selected.
-        Box::new(move || linux::show_items(path)),
-    ];
+/// The file manager with the file selected, then its bare folder.
+fn reveal_attempts(path: &Path) -> Vec<Attempt<'_>> {
+    let mut attempts: Vec<Attempt<'_>> = vec![Box::new(move || select(path))];
     if let Some(folder) = path.parent() {
-        attempts.push(Box::new(move || {
-            linux::launch(Command::new("xdg-open").arg(folder))
-        }));
+        attempts.push(Box::new(move || open_folder(folder)));
     }
     attempts
 }
 
+/// GLib launches the default application itself, in a terminal when its
+/// desktop entry asks for one, and exits non-zero when it cannot.
+#[cfg(all(unix, not(target_os = "macos")))]
+fn open_attempt(path: &Path) -> Attempt<'_> {
+    Box::new(move || linux::launch(std::process::Command::new("gio").arg("open").arg(path)))
+}
+
 /// macOS's `open` and Windows' `start` report a file nothing can open.
 #[cfg(not(all(unix, not(target_os = "macos"))))]
-fn attempts(path: &Path) -> Vec<Attempt<'_>> {
-    let mut attempts: Vec<Attempt<'_>> = vec![Box::new(move || {
-        open::that(path).map_err(|error| error.to_string())
-    })];
-    if let Some(folder) = path.parent() {
-        attempts.push(Box::new(move || {
-            open::that(folder).map_err(|error| error.to_string())
-        }));
+fn open_attempt(path: &Path) -> Attempt<'_> {
+    Box::new(move || open::that(path).map_err(|error| error.to_string()))
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn select(path: &Path) -> Result<(), String> {
+    linux::show_items(path)
+}
+
+#[cfg(target_os = "macos")]
+fn select(path: &Path) -> Result<(), String> {
+    match std::process::Command::new("open").arg("-R").arg(path).status() {
+        Ok(status) if status.success() => Ok(()),
+        Ok(status) => Err(format!("open -R failed ({status})")),
+        Err(error) => Err(format!("open: {error}")),
     }
-    attempts
+}
+
+/// Explorer's exit code says nothing (it is 1 after a success), so only a
+/// failure to start it counts. Its `/select,` takes the path quoted inside the
+/// same argument, which `Command::arg`'s own quoting would break for a path
+/// with spaces.
+#[cfg(windows)]
+fn select(path: &Path) -> Result<(), String> {
+    use std::os::windows::process::CommandExt;
+    let mut argument = std::ffi::OsString::from("/select,\"");
+    argument.push(path);
+    argument.push("\"");
+    std::process::Command::new("explorer")
+        .raw_arg(argument)
+        .spawn()
+        .map(drop)
+        .map_err(|error| format!("explorer: {error}"))
+}
+
+#[cfg(all(unix, not(target_os = "macos")))]
+fn open_folder(folder: &Path) -> Result<(), String> {
+    linux::launch(std::process::Command::new("xdg-open").arg(folder))
+}
+
+#[cfg(not(all(unix, not(target_os = "macos"))))]
+fn open_folder(folder: &Path) -> Result<(), String> {
+    open::that(folder).map_err(|error| error.to_string())
 }
 
 /// Opens the window's web links the way attachments and folders are opened.

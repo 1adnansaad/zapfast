@@ -8063,6 +8063,16 @@ impl Worker {
                     }
                 });
             }
+            Command::ShowInFolder(path) => {
+                let events = self.events.clone();
+                let waker = self.waker.clone();
+                tokio::task::spawn_blocking(move || {
+                    if let Err(error) = crate::opener::reveal(&path) {
+                        let _ = events.send(Event::Error(error));
+                        waker.wake();
+                    }
+                });
+            }
             Command::SaveAttachments { files } => {
                 let events = self.events.clone();
                 let waker = self.waker.clone();
