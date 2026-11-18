@@ -1114,7 +1114,8 @@ fn key_hint(ui: &egui::Ui, palette: &Palette, row: Rect, keys: &str) {
         egui::Stroke::new(1.0, palette.outline),
         egui::StrokeKind::Inside,
     );
-    ui.painter().galley(cap.center() - galley.size() / 2.0, galley, palette.text);
+    ui.painter()
+        .galley(cap.center() - galley.size() / 2.0, galley, palette.text);
 }
 
 /// Whether the list scrolled by `salt` is near enough its top to follow a sent
@@ -1459,7 +1460,17 @@ fn hit_row(app: &mut App, ui: &mut egui::Ui, hit: &Message) {
 pub(super) fn contact_row(app: &mut App, ui: &mut egui::Ui, contact: &Contact, selected: bool) {
     let name = app.display_name(&contact.id);
     let detail = crate::model::phone_of(&contact.id).map(crate::util::phone);
-    if person_row(app, ui, &contact.id, true, &name, detail.as_deref(), selected).clicked() {
+    if person_row(
+        app,
+        ui,
+        &contact.id,
+        true,
+        &name,
+        detail.as_deref(),
+        selected,
+    )
+    .clicked()
+    {
         app.actions.push(Action::StartChat {
             id: contact.id.clone(),
             name,

@@ -17075,7 +17075,11 @@ mod tests {
             zip.display(),
             directory.path().display(),
         );
-        assert_eq!(named(&copied), [pdf.clone(), zip.clone()], "folders are skipped");
+        assert_eq!(
+            named(&copied),
+            [pdf.clone(), zip.clone()],
+            "folders are skipped"
+        );
         // Among other words, with a space in the name and a full stop after.
         let sentence = format!("here is {} and {}.", pdf.display(), zip.display());
         let found = paths_in(&sentence);
@@ -17083,7 +17087,10 @@ mod tests {
         assert_eq!(&sentence[found[0].0.clone()], pdf.display().to_string());
         assert_eq!(&sentence[found[1].0.clone()], zip.display().to_string());
         assert!(named("not a path, nor /nowhere/at/all.pdf").is_empty());
-        assert!(named(r"\\server\share\c.zip").is_empty(), "no network lookups");
+        assert!(
+            named(r"\\server\share\c.zip").is_empty(),
+            "no network lookups"
+        );
         assert!(named("").is_empty());
     }
 
@@ -17091,7 +17098,10 @@ mod tests {
     fn without_paths_leaves_the_caption() {
         let text = "\"C:\\a.pdf\"\nlook at this\nC:\\b.pdf";
         assert_eq!(without_paths(text, &[0..10, 24..32]), "look at this");
-        assert_eq!(without_paths("here is X for you", &[8..9]), "here is for you");
+        assert_eq!(
+            without_paths("here is X for you", &[8..9]),
+            "here is for you"
+        );
         assert_eq!(without_paths("X.", &[0..1]), "", "nothing left to say");
         assert_eq!(
             without_paths("  kept  as  typed\nX", &[18..19]),

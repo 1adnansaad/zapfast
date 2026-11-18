@@ -80,7 +80,11 @@ fn select(path: &Path) -> Result<(), String> {
 
 #[cfg(target_os = "macos")]
 fn select(path: &Path) -> Result<(), String> {
-    match std::process::Command::new("open").arg("-R").arg(path).status() {
+    match std::process::Command::new("open")
+        .arg("-R")
+        .arg(path)
+        .status()
+    {
         Ok(status) if status.success() => Ok(()),
         Ok(status) => Err(format!("open -R failed ({status})")),
         Err(error) => Err(format!("open: {error}")),

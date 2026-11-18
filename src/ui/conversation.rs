@@ -2562,7 +2562,8 @@ fn path_suggestion_strip(app: &mut App, ui: &mut egui::Ui) {
                 )
                 .clicked()
                 {
-                    scan.kept.extend(offered.iter().map(|(_, path)| path.clone()));
+                    scan.kept
+                        .extend(offered.iter().map(|(_, path)| path.clone()));
                 }
                 if theme::soft_button(ui, &palette, Some(Icon::Paperclip), "Attach", true).clicked()
                 {

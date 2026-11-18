@@ -1255,9 +1255,16 @@ mod tests {
             frame(0.5, Modifiers::COMMAND, vec![]),
             Some(ModifierHint::Numbers)
         );
-        assert_eq!(frame(0.6, Modifiers::NONE, vec![]), None, "gone when let go");
+        assert_eq!(
+            frame(0.6, Modifiers::NONE, vec![]),
+            None,
+            "gone when let go"
+        );
         assert_eq!(frame(1.0, Modifiers::ALT, vec![]), None);
-        assert_eq!(frame(1.5, Modifiers::ALT, vec![]), Some(ModifierHint::Steps));
+        assert_eq!(
+            frame(1.5, Modifiers::ALT, vec![]),
+            Some(ModifierHint::Steps)
+        );
         let copy = egui::Event::Key {
             key: Key::C,
             physical_key: None,
@@ -1266,7 +1273,11 @@ mod tests {
             modifiers: Modifiers::COMMAND,
         };
         assert_eq!(frame(2.0, Modifiers::COMMAND, vec![copy]), None);
-        assert_eq!(frame(3.0, Modifiers::COMMAND, vec![]), None, "Ctrl+C held on");
+        assert_eq!(
+            frame(3.0, Modifiers::COMMAND, vec![]),
+            None,
+            "Ctrl+C held on"
+        );
         assert_eq!(frame(3.1, Modifiers::NONE, vec![]), None);
         assert_eq!(
             frame(3.2, Modifiers::COMMAND | Modifiers::SHIFT, vec![]),

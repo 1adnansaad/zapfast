@@ -179,7 +179,13 @@ fn settle_clusters(galley: &mut Galley) {
     let starts: Vec<Option<usize>> = galley
         .rows
         .iter()
-        .map(|placed| placed.row.glyphs.first().map(|glyph| glyph.cluster as usize))
+        .map(|placed| {
+            placed
+                .row
+                .glyphs
+                .first()
+                .map(|glyph| glyph.cluster as usize)
+        })
         .collect();
     for (index, placed) in galley.rows.iter_mut().enumerate() {
         let glyphs = &placed.row.glyphs;
@@ -1969,7 +1975,8 @@ mod tests {
             .families
             .insert(FontFamily::Proportional, vec!["bengali".into()]);
         ctx.set_fonts(fonts);
-        for text in ["কো", "কৌশল", "আমি তোমাকে ভালোবাসি", "ক্ষমা কর্ম প্রিয়"] {
+        for text in ["কো", "কৌশল", "আমি তোমাকে ভালোবাসি", "ক্ষমা কর্ম প্রিয়"]
+        {
             let galley = std::cell::RefCell::new(None);
             let mut output = ctx.run_ui(
                 egui::RawInput {

@@ -973,9 +973,7 @@ mod borderless {
         if restore.window != 0 {
             mark_full_screen(restore.window, false);
         }
-        ctx.send_viewport_cmd(ViewportCommand::Decorations(
-            !fastframe_titlebar::enabled(),
-        ));
+        ctx.send_viewport_cmd(ViewportCommand::Decorations(!fastframe_titlebar::enabled()));
         ctx.send_viewport_cmd(ViewportCommand::OuterPosition(restore.position));
         ctx.send_viewport_cmd(ViewportCommand::InnerSize(restore.size));
         if restore.maximized {
@@ -2110,10 +2108,8 @@ mod full_screen_tests {
         (root, app)
     }
 
-    const WINDOW: egui::Rect = egui::Rect::from_min_max(
-        egui::pos2(100.0, 80.0),
-        egui::pos2(900.0, 680.0),
-    );
+    const WINDOW: egui::Rect =
+        egui::Rect::from_min_max(egui::pos2(100.0, 80.0), egui::pos2(900.0, 680.0));
 
     #[cfg(not(target_os = "windows"))]
     #[test]
@@ -2163,8 +2159,7 @@ mod full_screen_tests {
     #[cfg(target_os = "windows")]
     #[test]
     fn the_borderless_window_overhangs_the_monitor_by_one_pixel() {
-        let monitor =
-            egui::Rect::from_min_max(egui::pos2(1920.0, 0.0), egui::pos2(3840.0, 1080.0));
+        let monitor = egui::Rect::from_min_max(egui::pos2(1920.0, 0.0), egui::pos2(3840.0, 1080.0));
         let (position, size) = borderless::cover(monitor, 2.0);
         assert_eq!(position, egui::pos2(960.0, 0.0));
         assert_eq!(size, egui::vec2(960.0, 540.5));
