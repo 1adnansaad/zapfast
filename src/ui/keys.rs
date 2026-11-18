@@ -1209,7 +1209,7 @@ fn track_modifier_hold(ctx: &egui::Context) {
     }
 }
 
-/// The hints a modifier held alone for [`HINT_DELAY`] asks for, if any.
+/// The hints a modifier held alone for `HINT_DELAY` asks for, if any.
 pub fn modifier_hint(ctx: &egui::Context) -> Option<ModifierHint> {
     let now = ctx.input(|input| input.time);
     ctx.data(|data| data.get_temp::<(ModifierHint, f64, bool)>(modifier_hold_id()))
