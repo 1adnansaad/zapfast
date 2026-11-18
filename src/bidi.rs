@@ -228,10 +228,14 @@ fn settle_clusters(galley: &mut Galley) {
                 .iter()
                 .map(|glyph| glyph.pos.x)
                 .fold(f32::INFINITY, f32::min);
-            let right = group
+            let drawn = group
                 .iter()
                 .map(Glyph::max_x)
                 .fold(f32::NEG_INFINITY, f32::max);
+            // A glyph after it starts where the cluster ends: positions are
+            // snapped to pixels and advances are not, so the drawn edge can
+            // pass that start and step the caret back.
+            let right = glyphs.get(at).map_or(drawn, |next| drawn.min(next.pos.x));
             for (offset, chr) in chars {
                 let mut glyph = group[0];
                 glyph.chr = chr;
@@ -1914,14 +1918,14 @@ mod tests {
     }
 
     /// Two characters shaped as one cluster in three pieces, the way ো draws
-    /// around its consonant: the caret after them is at the cluster's right
-    /// edge, not before its last piece.
+    /// around its consonant, then a letter: the caret after the cluster is
+    /// where that letter starts, not before the cluster's last piece.
     #[test]
     fn a_cluster_drawn_in_more_pieces_than_characters_keeps_the_caret() {
         let ctx = egui::Context::default();
-        let mut galley = layout_raw(&ctx, "ab");
+        let mut galley = layout_raw(&ctx, "abc");
         let row = Arc::make_mut(&mut galley.rows[0].row);
-        let (a, b) = (row.glyphs[0], row.glyphs[1]);
+        let (a, b, c) = (row.glyphs[0], row.glyphs[1], row.glyphs[2]);
         let half = b.advance_width / 2.0;
         let mut piece = b;
         piece.cluster = a.cluster;
@@ -1929,15 +1933,21 @@ mod tests {
         piece.advance_width = half;
         let mut tail = piece;
         tail.pos.x = b.pos.x + half;
-        row.glyphs = vec![a, piece, tail];
+        row.glyphs = vec![a, piece, tail, c];
         settle_clusters(&mut galley);
         let glyphs = &galley.rows[0].glyphs;
-        assert_eq!(glyphs.len(), 2, "one glyph per character");
-        assert_eq!((glyphs[0].chr, glyphs[1].chr), ('a', 'b'));
+        assert_eq!(glyphs.len(), 3, "one glyph per character");
+        assert_eq!(
+            (glyphs[0].chr, glyphs[1].chr, glyphs[2].chr),
+            ('a', 'b', 'c')
+        );
         assert_eq!(glyphs[1].cluster, a.cluster + 1);
         assert!((glyphs[0].pos.x - a.pos.x).abs() < 0.01);
-        assert!((glyphs[0].max_x() - b.max_x()).abs() < 0.01);
-        assert!((caret_x(&galley, 2) - b.max_x()).abs() < 0.5);
+        assert!(
+            (glyphs[0].max_x() - b.max_x().min(c.pos.x)).abs() < 0.01,
+            "the cluster reaches the next letter and no further"
+        );
+        assert!((caret_x(&galley, 2) - c.pos.x).abs() < 0.5);
         assert!((caret_x(&galley, 0) - a.pos.x).abs() < 0.5);
     }
 
@@ -2005,8 +2015,11 @@ mod tests {
                 .iter()
                 .map(Glyph::max_x)
                 .fold(0.0_f32, f32::max);
+            // Within a pixel: glyph positions snap to whole pixels and their
+            // advances do not, so the row's end and the ink's can differ by
+            // half a pixel each way.
             assert!(
-                (carets[chars] - drawn).abs() < 0.5,
+                (carets[chars] - drawn).abs() < 1.0,
                 "{text:?}: the caret ends at {}, the text at {drawn}",
                 carets[chars]
             );
