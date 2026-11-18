@@ -163,8 +163,10 @@ pub fn show(app: &mut App, ctx: &egui::Context) {
             // install), offer the merge prompt instead, so upstream's build
             // never replaces this one (FORK.md).
             let _upstream = action;
+            // Owned, as upstream's translated labels are, so its `&label`
+            // below stays as upstream wrote it.
             let action = Some((
-                "Copy merge prompt",
+                "Copy merge prompt".to_owned(),
                 Action::CopyText(crate::updates::merge_prompt(&release)),
             ));
             ui.add_space(16.0);

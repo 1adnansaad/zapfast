@@ -17095,6 +17095,10 @@ mod tests {
     }
 
     #[test]
+    #[expect(
+        clippy::single_range_in_vec_init,
+        reason = "`without_paths` takes a list of spans, and one span is a list of one"
+    )]
     fn without_paths_leaves_the_caption() {
         let text = "\"C:\\a.pdf\"\nlook at this\nC:\\b.pdf";
         assert_eq!(without_paths(text, &[0..10, 24..32]), "look at this");
