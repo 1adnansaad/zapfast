@@ -12,7 +12,7 @@ says what each one is for.
 change that makes the fork differ from upstream, and when a sync drops or
 reworks one.
 
-Synced to: upstream `v0.21.1` (2026-11-09).
+Synced to: upstream `v0.21.3` (2026-11-18).
 
 ## Changes
 
@@ -193,7 +193,8 @@ Synced to: upstream `v0.21.1` (2026-11-09).
   `ZAPFAST_*` variables, the update slug, the OGG vendor tag. Update toasts,
   the update dialog and its settings say ZapFast because they name upstream's
   release; the macOS Login Items and camera-permission messages do because
-  they name the bundle. The link preview fetcher's User-Agent
+  they name the bundle, and so does 0.21.3's macOS "Closing the window keeps
+  ZapFast in the Dock" (the Dock shows the bundle). The link preview fetcher's User-Agent
   (`ZapFast/<version>`, what sites see) and the log line about an older
   ZapFast's files beside an account (`src/paths.rs`) stay as upstream too.
   `docs/`, `packaging/` and `assets/i18n/` are untouched. After an upstream
@@ -277,7 +278,7 @@ Synced to: upstream `v0.21.1` (2026-11-09).
   scales the overlay for the display.
 - **Files:** since 0.20 upstream draws the overlay in fastframe-dock, so
   `src/notify/badge_windows.rs` is a copy of fastframe-dock v0.14.1's Windows
-  `Taskbar` (still identical in v0.15.4, which 0.21.1 uses) (same API, its
+  `Taskbar` (still identical in v0.17.1, which 0.21.3 uses) (same API, its
   retry schedule and recreated-button hook) with the dot's `overlay_rgba`, and
   its tests. `src/notify.rs` exports it in place of `fastframe_dock::Taskbar`;
   `Cargo.toml` adds the `Win32_Graphics_Gdi` and `Win32_UI_Shell` features to
@@ -368,7 +369,9 @@ Synced to: upstream `v0.21.1` (2026-11-09).
 - **What:** typing or pasting a number into New chat's search (`+1 (555)
   123-4567`, `0044 ...`, plain digits) lists contacts by its digits, and from
   7 digits offers a "Message this number" row on top. Clicking it, or Enter in
-  the field, runs New contact's Message (`Action::NewContact` without a name):
+  the field (0.21.3's Enter opens the highlighted first match, and this row
+  is then the highlighted one), runs New contact's Message
+  (`Action::NewContact` without a name):
   WhatsApp's registration check, then the chat opens, or a "not on WhatsApp"
   toast. No row for a listed contact's exact number, ourselves, or a locked
   chat.
@@ -377,7 +380,9 @@ Synced to: upstream `v0.21.1` (2026-11-09).
 - **Files:** `src/util.rs` (`typed_number` and its test), `src/ui/chats.rs`
   (`number_row`, `message_number`; `person_row` takes `fetch_picture`),
   `src/ui/dialogs.rs` (`new_chat` hands the digits to upstream's
-  `contact_choices`, which New call and New group share, unchanged),
+  `contact_choices`, which New call and New group share, unchanged; counts
+  the row in 0.21.3's list height and takes the highlight off the first
+  contact while it shows),
   `docs/_guide/using-zapfast.md`.
 - **Cost:** English-only label. A local number without its country code
   (`0300...`) is not converted and fails the check. Upstream's

@@ -64,6 +64,7 @@ mod tests {
         let prompt = merge_prompt(&Release {
             version: "9.9.9".into(),
             url: "https://example.invalid/release".into(),
+            published_at: None,
         });
         assert!(prompt.contains("git rebase v9.9.9"));
         assert!(prompt.contains(env!("CARGO_PKG_VERSION")));
