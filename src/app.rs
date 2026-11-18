@@ -12433,7 +12433,9 @@ pub(crate) fn paths_in(text: &str) -> Vec<(std::ops::Range<usize>, PathBuf)> {
             } else if std::path::Path::new(&line[start..words[i].1]).is_absolute() {
                 (i..words.len().min(i + LONGEST)).rev().find_map(|j| {
                     let span = &line[start..words[j].1];
-                    [span, span.trim_end_matches(TRAILING)]
+                    // Without the punctuation first: Windows drops a name's
+                    // trailing dots, so "c.zip." is found as c.zip itself.
+                    [span.trim_end_matches(TRAILING), span]
                         .into_iter()
                         .find_map(|candidate| Some((j, start + candidate.len(), file(candidate)?)))
                 })
