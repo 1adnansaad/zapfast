@@ -82,7 +82,10 @@ Synced to: upstream `v0.21.3` (2026-11-18).
 - **Files:** `src/updates.rs` (`merge_prompt` and its test),
   `src/ui/update.rs` (sets upstream's chosen action aside just before the
   button is drawn), `assets/fork-merge-prompt.md` (the wording; edit freely,
-  keeping the `{placeholders}`).
+  keeping the `{placeholders}`, and no other `{`, which the test refuses).
+  Since 0.21.3 it also offers to commit uncommitted fork work before the
+  backup, runs FORK.md's per-sync checks, and lets `cargo check` update
+  `Cargo.lock`.
 - **Cost:** with Settings > "Download updates automatically" on, upstream's
   update is still downloaded in the background, though nothing installs it:
   keep that setting off.
